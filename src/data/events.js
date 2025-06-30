@@ -1,14 +1,12 @@
-import { BetweenVerticalStart } from "lucide-react";
-
 export const events = [
   {
     id: 1,
     title: 'VOICES OF BHARAT',
     date: '2025-06-24',
     time: '11:00 AM - 12:00 PM',
-    location: 'university Auditorum',
+    location: 'University Auditorium',
     category: 'Anti-Terrorism',
-    speaker: 'Maninder Jeet Singh BetweenVerticalStart',
+    speaker: 'Maninder Jeet Singh Bitta',
     position: 'Chairman of the All-India Anti-Terrorist Front',
     image: '/bitta2.jpg'
   },
@@ -19,7 +17,7 @@ export const events = [
     time: '6:00 PM onwards',
     location: 'Open Air Theatre',
     category: 'Cultural',
-     image: '/event1.jpg'
+    image: '/event1.jpg'
   },
   {
     id: 3,
@@ -58,10 +56,9 @@ export const events = [
     time: '8:00 PM onwards',
     location: 'Campus Ground',
     category: 'Festival',
-    image: 'https://placehold.co/400x250/4A90E2/FFFFFF?text=Garba+Night',
+    image: '/event3.jpg',
     description: 'A night of rhythm, tradition, and energy on the garba floor.',
     highlightText: 'Over 500 students danced the night away!',
     customStyle: 'bg-blue-50'
   }
 ];
-

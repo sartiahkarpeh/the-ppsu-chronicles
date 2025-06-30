@@ -1,16 +1,43 @@
-import { notFound } from 'next/navigation';
-import { spotlights } from '@/data/spotlights';
+'use client';
 
-export function generateStaticParams() {
-  return spotlights.map(student => ({
-    slug: student.link.split('/').pop(),
-  }));
-}
+import { useEffect, useState } from 'react';
+import { useParams, notFound } from 'next/navigation';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 
-export default function StudentSpotlightPage({ params }) {
-  const { slug } = params;
-  const student = spotlights.find(s => s.link.endsWith(slug));
+const StudentSpotlightPage = () => {
+  const { slug } = useParams();
+  const [student, setStudent] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const fetchStudent = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, 'spotlights'));
+        const students = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          slug: doc.data().link.split('/').pop(), // get slug from link
+        }));
+
+        const found = students.find(s => s.slug === slug);
+        if (found) {
+          setStudent(found);
+        } else {
+          setStudent(null);
+        }
+      } catch (error) {
+        console.error("Error fetching spotlight:", error);
+        setStudent(null);
+      }
+
+      setLoading(false);
+    };
+
+    fetchStudent();
+  }, [slug]);
+
+  if (loading) return <p className="text-center py-10">Loading spotlight...</p>;
   if (!student) return notFound();
 
   return (
@@ -27,5 +54,7 @@ export default function StudentSpotlightPage({ params }) {
       </p>
     </div>
   );
-}
+};
+
+export default StudentSpotlightPage;
 

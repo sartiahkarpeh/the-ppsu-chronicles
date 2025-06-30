@@ -1,16 +1,54 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import BlogPostCard from '@/components/BlogPostCard';
-import { posts } from '@/data/posts';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 import { BookOpen } from 'lucide-react';
 
 const categories = ['All', 'Personal', 'Opinion', 'Creative Writing', 'Academics'];
 
+// ✅ New, more robust function to create clean slugs
+const createSlug = (title) => {
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and hyphens
+    .trim()
+    .replace(/\s+/g, '-'); // Replace spaces with hyphens
+};
+
+
 export default function StoriesPage() {
   const [activeCategory, setActiveCategory] = useState('All');
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filteredPosts = activeCategory === 'All' 
-    ? posts 
+  useEffect(() => {
+    const fetchPosts = async () => {
+      setLoading(true);
+      try {
+        const postsCollection = collection(db, 'posts');
+        const postsSnapshot = await getDocs(postsCollection);
+        const postsList = postsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id, // Get the unique document ID
+            ...data,
+            // ✅ Use the new, better slug function
+            slug: createSlug(data.title),
+          };
+        });
+        setPosts(postsList);
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+      }
+      setLoading(false);
+    };
+
+    fetchPosts();
+  }, []);
+
+  const filteredPosts = activeCategory === 'All'
+    ? posts
     : posts.filter(post => post.category === activeCategory);
 
   return (
@@ -39,16 +77,20 @@ export default function StoriesPage() {
           </button>
         ))}
       </div>
-
+      
       {/* Posts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredPosts.length > 0 ? (
-          filteredPosts.map(post => <BlogPostCard key={post.slug} post={post} />)
-        ) : (
-          <p className="text-center text-text-secondary col-span-full">No posts in this category yet.</p>
-        )}
-      </div>
+      {loading ? (
+        <p className="text-center">Loading stories...</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {filteredPosts.length > 0 ? (
+            // ✅ FIX: Use the unique post.id for the key
+            filteredPosts.map(post => <BlogPostCard key={post.id} post={post} />)
+          ) : (
+            <p className="text-center text-text-secondary col-span-full">No posts in this category yet.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
-
