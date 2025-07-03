@@ -1,127 +1,79 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase/config';
-import { Camera, Video, Mic } from 'lucide-react';
-import VideoModal from '@/components/VideoModal';
+import { useState, useEffect } from 'react';
+import { db } from '../../firebase/config';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import VideoModal from '../../components/VideoModal';
 
+// This is now a client component to handle modal state
 export default function MediaPage() {
-  const [media, setMedia] = useState({ videos: [], images: [], podcasts: [] });
-  const [modalVideoUrl, setModalVideoUrl] = useState(null);
-  const [loading, setLoading] = useState(true);
+    const [mediaItems, setMediaItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedVideo, setSelectedVideo] = useState(null);
 
-  const openModal = (url) => setModalVideoUrl(url);
-  const closeModal = () => setModalVideoUrl(null);
+    useEffect(() => {
+        // Fetches all published media items
+        async function getMedia() {
+            const mediaCollection = collection(db, 'media');
+            const q = query(
+                mediaCollection,
+                where('status', '==', 'published'),
+                orderBy('createdAt', 'desc')
+            );
+            try {
+                const snapshot = await getDocs(q);
+                const items = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        createdAt: data.createdAt?.toDate().toISOString() || null,
+                    };
+                });
+                setMediaItems(items);
+            } catch (error) {
+                console.error("Error fetching media:", error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        getMedia();
+    }, []);
 
-  useEffect(() => {
-    const fetchMedia = async () => {
-      setLoading(true);
-      try {
-        const mediaSnapshot = await getDocs(collection(db, 'media_videos'));
-        const mediaList = mediaSnapshot.docs.map(doc => doc.data());
+    if (loading) {
+        return <div className="text-center py-10">Loading Media...</div>;
+    }
 
-        // Separate by type
-        const videos = mediaList.filter(item => item.type === 'video');
-        const images = mediaList.filter(item => item.type === 'image');
-        const podcasts = mediaList.filter(item => item.type === 'podcast');
-
-        setMedia({ videos, images, podcasts });
-      } catch (error) {
-        console.error('Error fetching media:', error);
-      }
-      setLoading(false);
-    };
-
-    fetchMedia();
-  }, []);
-
-  if (loading) return <p className="text-center py-10">Loading media...</p>;
-
-  return (
-    <>
-      <div className="container mx-auto px-6 py-12 md:py-20">
-        {/* Header */}
-        <header className="text-center mb-16">
-          <Camera className="mx-auto text-primary h-16 w-16 mb-4" />
-          <h1 className="text-4xl md:text-5xl font-extrabold text-text-primary">Media & Gallery</h1>
-          <p className="mt-4 text-lg text-text-secondary max-w-2xl mx-auto">
-            A visual journey through campus life. Explore videos, photos, and student-created content.
-          </p>
-        </header>
-
-        {/* Video Highlights */}
-        <section className="mb-16">
-          <h2 className="text-3xl font-bold text-text-primary mb-8 flex items-center gap-3">
-            <Video className="text-secondary" /> Video Highlights
-          </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {media.videos.map(video => (
-              <div key={video.id || video.title} className="bg-white p-6 rounded-lg shadow-md">
-                <h3 className="text-xl font-bold mb-2">{video.title}</h3>
-                <p className="text-text-secondary mb-4">{video.description}</p>
-                <div className="aspect-video">
-                  <iframe
-                    className="w-full h-full rounded-md"
-                    src={`${video.youtubeUrl}?rel=0`}
-                    title={video.title}
-                    frameBorder="0"
-                    loading="lazy"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Photo Stories */}
-        <section className="mb-16">
-          <h2 className="text-3xl font-bold text-text-primary mb-8 flex items-center gap-3">
-            <Camera className="text-secondary" /> Photo Stories
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {media.images.map(image => (
-              <div key={image.id || image.alt} className="overflow-hidden rounded-lg shadow-md group">
-                <img
-                  src={image.src}
-                  alt={image.alt}
-                  className="w-full h-full object-cover aspect-square transition-transform duration-300 group-hover:scale-110"
-                />
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Vlogs & Podcasts */}
-        <section>
-          <h2 className="text-3xl font-bold text-text-primary mb-8 flex items-center gap-3">
-            <Mic className="text-secondary" /> Vlogs & Podcasts
-          </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {media.podcasts.map(podcast => (
-              <div key={podcast.id || podcast.title} className="bg-white p-6 rounded-lg shadow-md">
-                <h3 className="text-xl font-bold mb-2">{podcast.title}</h3>
-                <p className="text-text-secondary mb-4">{podcast.description}</p>
-                <div className="aspect-video">
-                  <iframe
-                    className="w-full h-full rounded-md"
-                    src={podcast.embedUrl}
-                    title={podcast.title}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-
-      {modalVideoUrl && <VideoModal videoUrl={modalVideoUrl} onClose={closeModal} />}
-    </>
-  );
+    return (
+        <div className="container mx-auto px-4 py-8">
+            <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">Media Gallery</h1>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {mediaItems.map((item) => (
+                    <div key={item.id} className="group bg-white rounded-lg shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300">
+                        {item.imageUrl && (
+                            <img src={item.imageUrl} alt={item.title} className="w-full h-56 object-cover" />
+                        )}
+                        {item.youtubeEmbedUrl && !item.imageUrl && (
+                            // Display a thumbnail for videos
+                            <div className="w-full h-56 bg-black flex items-center justify-center cursor-pointer" onClick={() => setSelectedVideo(item.youtubeEmbedUrl)}>
+                               <svg className="w-16 h-16 text-white opacity-70 group-hover:opacity-100" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"></path></svg>
+                            </div>
+                        )}
+                        <div className="p-4">
+                            <h3 className="text-lg font-semibold text-gray-900">{item.title}</h3>
+                            <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                            {item.youtubeEmbedUrl && (
+                                <button onClick={() => setSelectedVideo(item.youtubeEmbedUrl)} className="text-sm text-indigo-600 hover:text-indigo-800 mt-2 font-semibold">
+                                    Watch Video
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                ))}
+            </div>
+            {selectedVideo && (
+                <VideoModal videoUrl={selectedVideo} onClose={() => setSelectedVideo(null)} />
+            )}
+        </div>
+    );
 }
-

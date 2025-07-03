@@ -1,152 +1,52 @@
-'use client';
+import { db } from '../../firebase/config';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import EventCard from '../../components/EventCard';
 
-import { useEffect, useState } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase/config';
-import { Calendar } from 'lucide-react';
-import EventCard from '@/components/EventCard';
-import ClubProfile from '@/components/ClubProfile';
+// Fetches all published events
+async function getEvents() {
+    const eventsCollection = collection(db, 'events');
+    // Query for published events, ordered by the event date
+    const q = query(
+        eventsCollection,
+        where('status', '==', 'published'),
+        orderBy('date', 'desc') // Show upcoming or most recent events first
+    );
 
-export default function EventsPage() {
-  const [events, setEvents] = useState([]);
-  const [clubs, setClubs] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-
-      try {
-        const eventsSnapshot = await getDocs(collection(db, 'events'));
-        const eventsList = eventsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-
-        const clubsSnapshot = await getDocs(collection(db, 'clubs'));
-        const clubsList = clubsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-
-        setEvents(eventsList);
-        setClubs(clubsList);
-      } catch (error) {
-        console.error("Error loading events or clubs:", error);
-      }
-
-      setLoading(false);
-    };
-
-    fetchData();
-  }, []);
-
-  const now = new Date();
-
-  const upcomingEvents = events.filter(e => new Date(e.date) >= now);
-  const pastEvents = events
-    .filter(e => new Date(e.date) < now)
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 6);
-
-  if (loading) {
-    return <p className="text-center p-10">Loading events and clubs...</p>;
-  }
-
-  return (
-    <div className="container mx-auto px-6 py-12 md:py-20">
-      {/* Header */}
-      <header className="text-center mb-16">
-        <Calendar className="mx-auto text-primary h-16 w-16 mb-4" />
-        <h1 className="text-4xl md:text-5xl font-extrabold text-text-primary">Events & Campus Life</h1>
-        <p className="mt-4 text-lg text-text-secondary max-w-2xl mx-auto">
-          Stay updated with the latest happenings, from tech fests to cultural nights, and discover student clubs.
-        </p>
-      </header>
-
-      {/* Upcoming Events */}
-      <section className="mb-16">
-        <h2 className="text-3xl font-bold text-text-primary mb-8">Upcoming Events</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {upcomingEvents.length > 0 ? (
-            upcomingEvents.map(event => (
-              <EventCard key={`upcoming-${event.id}`} event={event} />
-            ))
-          ) : (
-            <p className="text-text-secondary col-span-full">No new events scheduled. Stay tuned!</p>
-          )}
-        </div>
-      </section>
-
-      {/* Past Event Highlights */}
-      <section className="mb-16">
-        <h2 className="text-3xl font-bold text-text-primary mb-8">Past Event Highlights</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {pastEvents.map(event => {
-            const eventDate = new Date(event.date);
-            const formattedDate = eventDate.toLocaleDateString('en-US', {
-              weekday: 'short',
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            });
-
-            return event.id === '1' ? (
-              // Custom layout for VOICES OF BHARAT
-              <div key={`past-${event.id}`} className="bg-white rounded-lg shadow-lg overflow-hidden md:col-span-2">
-                <img src={event.image} alt={event.title} className="w-full h-64 object-cover" />
-                <div className="p-6">
-                  <h3 className="text-2xl font-bold text-primary mb-2">{event.title}</h3>
-                  <p className="text-sm text-gray-600 mb-2"><strong>Date:</strong> {formattedDate}</p>
-                  <p className="text-sm text-gray-600 mb-2"><strong>Time:</strong> {event.time}</p>
-                  <p className="text-sm text-gray-600 mb-3"><strong>Location:</strong> {event.location}</p>
-                  {event.speaker && (
-                    <p className="text-text-secondary mb-1"><strong>Speaker:</strong> {event.speaker}</p>
-                  )}
-                  {event.position && (
-                    <p className="text-text-secondary mb-3"><strong>Position:</strong> {event.position}</p>
-                  )}
-                  <p className="text-sm italic text-gray-600">
-                    This event focused on anti-terrorism awareness and national unity.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              // Default layout
-              <div key={`past-${event.id}`} className={`rounded-lg shadow-md overflow-hidden ${event.customStyle || 'bg-white'}`}>
-                {event.image && (
-                  <img src={event.image} alt={event.title} className="w-full h-48 object-cover" />
-                )}
-                <div className="p-6">
-                  <h3 className="font-bold text-xl mb-2">{event.title}</h3>
-                  <p className="text-sm text-gray-600 mb-1"><strong>Date:</strong> {formattedDate}</p>
-                  <p className="text-sm text-gray-600 mb-1"><strong>Time:</strong> {event.time}</p>
-                  <p className="text-sm text-gray-600 mb-2"><strong>Location:</strong> {event.location}</p>
-                  <p className="text-text-secondary text-sm mb-2">
-                    {event.description || 'A quick look back at our successful event.'}
-                  </p>
-                  {event.highlightText && (
-                    <p className="text-sm font-semibold italic text-primary">
-                      {event.highlightText}
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Clubs Section */}
-      <section>
-        <h2 className="text-3xl font-bold text-text-primary mb-8">Clubs & Organizations</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {clubs.map(club => (
-            <ClubProfile key={`club-${club.id}`} club={club} />
-          ))}
-        </div>
-      </section>
-    </div>
-  );
+    try {
+        const snapshot = await getDocs(q);
+        const events = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                // Timestamps are not converted here as the date is likely a string.
+                // If 'date' is a Firestore timestamp, it should be converted.
+            };
+        });
+        return events;
+    } catch (error) {
+        console.error("Error fetching events:", error);
+        return [];
+    }
 }
 
+export default async function EventsPage() {
+    const events = await getEvents();
+
+    return (
+        <div className="bg-gray-100">
+            <div className="container mx-auto px-4 py-12">
+                <h1 className="text-4xl font-bold mb-8 text-center text-gray-800">Campus Events</h1>
+                {events.length > 0 ? (
+                    <div className="space-y-8">
+                        {events.map(event => (
+                            <EventCard key={event.id} event={event} />
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-center text-gray-500">There are no upcoming events scheduled at this time.</p>
+                )}
+            </div>
+        </div>
+    );
+}
