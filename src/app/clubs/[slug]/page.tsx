@@ -11,8 +11,8 @@ export async function generateStaticParams() {
   }));
 }
 
-export default function ClubDetailPage({ params }: { params: { slug: string } }) {
-  const { slug } = params;
+export default async function ClubDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const club = clubs.find(c => c.slug === slug);
 
   if (!club) notFound();
