@@ -5,7 +5,7 @@ import { CalendarDays, Clock, MapPin } from 'lucide-react';
 import { db } from '../firebase/config';
 import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
 import BlogPostCard from '../components/BlogPostCard';
-import EventCard from '../components/EventCard';
+// import EventCard from '../components/EventCard';
 import { format, isToday, isThisWeek, parseISO } from 'date-fns';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
@@ -223,7 +223,7 @@ export default async function HomePage() {
 
             {featuredSpotlights.length > 0 ? (
               <div className="grid gap-10 max-w-4xl mx-auto">
-                {featuredSpotlights.map((student, index) => (
+                {featuredSpotlights.map((student) => (
                   <div
                     key={student.id}
                     className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-card-bg rounded-2xl shadow-lg p-6 sm:p-8 items-center"
@@ -267,7 +267,7 @@ export default async function HomePage() {
 
             {featuredEvents.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                {featuredEvents.map((event, index) => {
+                {featuredEvents.map((event) => {
                   const eventDate = parseISO(event.date);
                   let badge = "Upcoming";
                   if (isToday(eventDate)) badge = "Today";

@@ -6,7 +6,7 @@ export default function TermsOfService() {
       <p className="mb-4">Effective Date: [Insert Date]</p>
 
       <p className="mb-4">
-        By using The PPSU Chronicles website ("we", "our", "us", "site"), you agree to these terms. If you disagree with any part, please do not use the site.
+        By using The PPSU Chronicles website (&quot;we&quot;, &quot;our&quot;, &quot;us&quot;, &quot;site&quot;), you agree to these terms. If you disagree with any part, please do not use the site.
       </p>
 
       <h2 className="text-xl font-semibold mt-8 mb-2">1. Use of the Site</h2>

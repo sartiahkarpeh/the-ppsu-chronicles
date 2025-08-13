@@ -6,7 +6,7 @@ export default function PrivacyPolicy() {
       <p className="mb-4">Effective Date: [Insert Date]</p>
 
       <p className="mb-4">
-        The PPSU Chronicles ("we", "our", or "us") values your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website.
+        The PPSU Chronicles (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) values your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website.
       </p>
 
       <h2 className="text-xl font-semibold mt-8 mb-2">1. Information We Collect</h2>

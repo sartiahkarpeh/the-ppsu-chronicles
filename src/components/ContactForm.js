@@ -52,7 +52,7 @@ export default function ContactForm() {
       <div className="text-center p-8 bg-green-50 border border-green-200 rounded-lg">
         <h3 className="text-2xl font-bold text-green-800">Message Sent!</h3>
         <p className="text-green-700 mt-2">
-          Thank you for reaching out. We'll get back to you as soon as possible.
+          Thank you for reaching out. We&apos;ll get back to you as soon as possible.
         </p>
       </div>
     );

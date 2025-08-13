@@ -6,7 +6,6 @@ import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 
 export default function MediaPage() {
     const [playingVideos, setPlayingVideos] = useState(new Set());
-    const [iframeLoading, setIframeLoading] = useState(new Set());
     const [photoStories, setPhotoStories] = useState([]);
 
     useEffect(() => {
@@ -55,15 +54,7 @@ export default function MediaPage() {
     };
 
     const handleVideoPlay = (itemId) => {
-        setIframeLoading(prev => new Set([...prev, itemId]));
-        setTimeout(() => {
-            setPlayingVideos(prev => new Set([...prev, itemId]));
-            setIframeLoading(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(itemId);
-                return newSet;
-            });
-        }, 100);
+        setPlayingVideos(prev => new Set([...prev, itemId]));
     };
 
     const videoHighlights = [

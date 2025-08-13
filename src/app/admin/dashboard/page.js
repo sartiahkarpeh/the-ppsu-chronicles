@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db, storage, auth } from '../../../firebase/config'; // Adjust this path if needed
 import {
   collection,
-  getDocs,
   addDoc,
   updateDoc,
   deleteDoc,
@@ -13,7 +12,6 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
-  getCountFromServer,
 } from 'firebase/firestore';
 import {
   ref,
@@ -368,7 +366,7 @@ export default function SuperAdminDashboard() {
 
   const performApprove = async (submission, destination = 'posts') => {
     try {
-      const { id, ...submissionData } = submission;
+      const submissionData = submission;
 
       let publishData;
       if (destination === 'posts') {

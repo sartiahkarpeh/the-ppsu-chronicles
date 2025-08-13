@@ -70,11 +70,11 @@ export default async function EventsPage() {
         <div className="bg-gray-50 min-h-screen">
             <div className="container mx-auto px-4 py-12">
                 <h1 className="text-4xl font-bold mb-12 text-center text-gray-800">Campus Events</h1>
-                
+
                 {/* Upcoming Events Section */}
                 <section className="mb-16">
                     <h2 className="text-3xl font-bold mb-8 text-gray-700 border-b-2 border-blue-500 pb-2">
-                        What's Happening on Campus
+                        What&apos;s Happening on Campus
                     </h2>
                     {upcomingEvents.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

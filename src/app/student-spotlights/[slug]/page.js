@@ -17,11 +17,11 @@ async function getSpotlight(slug) {
             // Try to find by document ID as fallback
             const docRef = doc(db, 'spotlights', slug);
             const docSnap = await getDoc(docRef);
-            
+
             if (!docSnap.exists() || docSnap.data().status !== 'published') {
                 return null;
             }
-            
+
             const data = docSnap.data();
             return {
                 id: docSnap.id,
@@ -69,17 +69,17 @@ export default async function StudentSpotlightPage({ params }) {
             <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden md:flex">
                     <div className="md:w-1/3">
-                        <img 
-                            className="h-full w-full object-cover" 
-                            src={spotlight.imageUrl || 'https://placehold.co/400x600/a2d2ff/ffffff?text=Spotlight'} 
-                            alt={spotlight.studentName} 
+                        <img
+                            className="h-full w-full object-cover"
+                            src={spotlight.imageUrl || 'https://placehold.co/400x600/a2d2ff/ffffff?text=Spotlight'}
+                            alt={spotlight.studentName}
                         />
                     </div>
                     <div className="p-8 md:w-2/3">
                         <div className="uppercase tracking-wide text-sm text-indigo-500 font-semibold">{spotlight.major}</div>
                         <h1 className="block mt-1 text-4xl leading-tight font-bold text-black">{spotlight.studentName}</h1>
                         <blockquote className="mt-4 text-gray-500 italic border-l-4 border-indigo-200 pl-4">
-                           "{spotlight.quote}"
+                            &quot;{spotlight.quote}&quot;
                         </blockquote>
                         <div className="mt-6 prose max-w-none text-gray-700" dangerouslySetInnerHTML={{ __html: spotlight.content }}></div>
                     </div>
