@@ -62,13 +62,16 @@ export default function LivePage() {
               overlay.size === 'large'
                 ? '2rem'
                 : overlay.size === 'medium'
-                ? '1.5rem'
-                : '1rem',
+                  ? '1.5rem'
+                  : '1rem',
           }}
         >
           {overlay.type === 'text'
             ? overlay.content
-            : <img src={overlay.content} alt="overlay" />}
+            : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={overlay.content} alt="overlay" />
+            )}
         </div>
       ))}
     </div>

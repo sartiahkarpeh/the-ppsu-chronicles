@@ -127,6 +127,7 @@ export default function MediaPage() {
                                     className="absolute inset-0 w-full h-full"
                                     aria-label={`Play video: ${item.title}`}
                                 >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
                                     <img
                                         src={getYouTubeThumbnail(item.youtubeUrl)}
                                         alt={item.title}
