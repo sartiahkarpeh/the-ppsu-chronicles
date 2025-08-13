@@ -1,45 +1,116 @@
-// This is a placeholder component for a comment section.
-// In a real application, you would integrate a service like Disqus, or build a backend.
+"use client";
 
-export default function CommentSection({ postId }) {
+import { useEffect, useMemo, useState } from "react";
+import { db } from "../firebase/config";
+import {
+  addDoc,
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+} from "firebase/firestore";
+
+export default function CommentSection({ storyId }) {
+  const [comments, setComments] = useState([]);
+  const [authorName, setAuthorName] = useState("");
+  const [text, setText] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const commentsRef = useMemo(() => {
+    if (!storyId) return null;
+    return collection(db, "posts", String(storyId), "comments");
+  }, [storyId]);
+
+  useEffect(() => {
+    if (!commentsRef) return;
+    const q = query(commentsRef, orderBy("createdAt", "asc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const next = snapshot.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          author: data.author || "Anonymous",
+          text: data.text || "",
+          createdAt: data.createdAt?.toDate?.() || null,
+        };
+      });
+      setComments(next);
+    });
+    return () => unsubscribe();
+  }, [commentsRef]);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!commentsRef) return;
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    setIsSubmitting(true);
+    try {
+      await addDoc(commentsRef, {
+        author: authorName.trim() || "Anonymous",
+        text: trimmed,
+        createdAt: serverTimestamp(),
+      });
+      setText("");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return (
     <section>
       <h2 className="text-2xl font-bold text-text-primary mb-6">Comments</h2>
       <div className="bg-gray-100 p-6 rounded-lg">
-        {/* New Comment Form */}
-        <div className="mb-6">
-          <textarea 
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none" 
-            rows="4" 
-            placeholder="Write a comment..."
-          ></textarea>
-          <button className="mt-3 bg-primary text-white font-semibold px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors">
-            Post Comment
+        <form onSubmit={handleSubmit} className="mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <input
+              type="text"
+              value={authorName}
+              onChange={(e) => setAuthorName(e.target.value)}
+              placeholder="Your name (optional)"
+              className="md:col-span-2 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
+              aria-label="Your name"
+            />
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              className="md:col-span-4 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:outline-none"
+              rows="3"
+              placeholder="Write a comment..."
+              aria-label="Comment text"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={isSubmitting || !text.trim()}
+            className="mt-3 bg-primary disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            {isSubmitting ? "Posting..." : "Post Comment"}
           </button>
-        </div>
+        </form>
 
-        {/* Existing Comments */}
         <div className="space-y-6">
-          <div className="flex space-x-4">
-            <img src="https://placehold.co/48x48/E0E0E0/333333?text=A" alt="Avatar" className="w-12 h-12 rounded-full" />
-            <div>
-              <p className="font-bold">Alex Johnson</p>
-              <p className="text-xs text-text-secondary mb-1">2 days ago</p>
-              <p className="text-text-primary">This is such an insightful article! Really enjoyed reading it.</p>
+          {comments.length === 0 && (
+            <p className="text-sm text-gray-500">Be the first to comment.</p>
+          )}
+          {comments.map((c) => (
+            <div key={c.id} className="flex space-x-4">
+              <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold text-gray-700">
+                {(c.author || "A").slice(0, 1).toUpperCase()}
+              </div>
+              <div>
+                <p className="font-bold">{c.author || "Anonymous"}</p>
+                <p className="text-xs text-text-secondary mb-1">
+                  {c.createdAt ? c.createdAt.toLocaleString() : "Just now"}
+                </p>
+                <p className="text-text-primary whitespace-pre-wrap">{c.text}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex space-x-4">
-            <img src="https://placehold.co/48x48/F5A623/FFFFFF?text=B" alt="Avatar" className="w-12 h-12 rounded-full" />
-            <div>
-              <p className="font-bold">Bella Chen</p>
-              <p className="text-xs text-text-secondary mb-1">1 day ago</p>
-              <p className="text-text-primary">Great perspective. I have a similar story I'd love to share sometime!</p>
-            </div>
-          </div>
+          ))}
         </div>
-        <p className="text-center text-sm text-gray-500 mt-8">Comment section is for demonstration purposes.</p>
       </div>
     </section>
   );
 }
-

@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { BookText, Menu, X } from 'lucide-react';
+import { HeaderContent } from './Header';
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -33,10 +34,10 @@ export default function Navbar() {
               </Link>
             ))}
             <Link href="#" className="bg-primary text-white px-4 py-2 rounded-full hover:bg-blue-600 transition-colors text-sm font-semibold">
-                Login
+              Login
             </Link>
           </div>
-          
+
           {/* Mobile Menu Button */}
           <div className="md:hidden">
             <button onClick={() => setIsOpen(!isOpen)}>
@@ -45,19 +46,38 @@ export default function Navbar() {
           </div>
         </div>
       </div>
-      
+
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden px-6 pt-2 pb-4 space-y-2 bg-white border-t">
-          {navLinks.map(link => (
-            <Link key={link.href} href={link.href} onClick={() => setIsOpen(false)} className="block text-text-primary hover:text-primary transition-colors py-2 font-medium">
-              {link.label}
-            </Link>
-          ))}
-          <Link href="#" className="block w-full text-center bg-primary text-white px-4 py-2 rounded-full hover:bg-blue-600 transition-colors mt-2 font-semibold">
-              Login
-          </Link>
-        </div>
+        <>
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-[1px] md:hidden" onClick={() => setIsOpen(false)} />
+          <aside className="fixed inset-y-0 left-0 w-80 max-w-[85%] bg-white shadow-xl md:hidden flex flex-col">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <div className="flex items-center space-x-2">
+                <BookText className="w-7 h-7 text-primary" />
+                <span className="text-lg font-bold text-text-primary">PPSU Chronicles</span>
+              </div>
+              <button onClick={() => setIsOpen(false)} aria-label="Close menu">
+                <X size={24} />
+              </button>
+            </div>
+            <div className="px-4 py-3 border-b">
+              <HeaderContent />
+            </div>
+            <nav className="flex-1 overflow-y-auto px-2 py-3">
+              {navLinks.map(link => (
+                <Link key={link.href} href={link.href} onClick={() => setIsOpen(false)} className="block text-text-primary hover:text-primary transition-colors py-2 px-4 rounded-md font-medium">
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+            <div className="px-4 py-4 border-t">
+              <Link href="#" className="block w-full text-center bg-primary text-white px-4 py-2 rounded-full hover:bg-blue-600 transition-colors mt-2 font-semibold">
+                Login
+              </Link>
+            </div>
+          </aside>
+        </>
       )}
     </nav>
   );

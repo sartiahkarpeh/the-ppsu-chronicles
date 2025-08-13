@@ -1,5 +1,5 @@
 import { db } from '../../../firebase/config';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 
 // Fetches a single spotlight by its slug
@@ -14,12 +14,25 @@ async function getSpotlight(slug) {
     try {
         const snapshot = await getDocs(q);
         if (snapshot.empty) {
-            return null;
+            // Try to find by document ID as fallback
+            const docRef = doc(db, 'spotlights', slug);
+            const docSnap = await getDoc(docRef);
+            
+            if (!docSnap.exists() || docSnap.data().status !== 'published') {
+                return null;
+            }
+            
+            const data = docSnap.data();
+            return {
+                id: docSnap.id,
+                ...data,
+                createdAt: data.createdAt?.toDate().toISOString() || null,
+            };
         }
-        const doc = snapshot.docs[0];
-        const data = doc.data();
+        const docData = snapshot.docs[0];
+        const data = docData.data();
         return {
-            id: doc.id,
+            id: docData.id,
             ...data,
             createdAt: data.createdAt?.toDate().toISOString() || null,
         };
@@ -36,7 +49,7 @@ export async function generateStaticParams() {
     try {
         const snapshot = await getDocs(q);
         return snapshot.docs.map(doc => ({
-            slug: doc.data().slug,
+            slug: doc.data().slug || doc.id, // Use document ID as fallback
         }));
     } catch (error) {
         console.error("Error generating static params for spotlights:", error);

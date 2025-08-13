@@ -4,11 +4,11 @@ import BlogPostCard from '../../components/BlogPostCard';
 
 // Fetches all published stories from Firestore
 async function getStories() {
-  const storiesCollection = collection(db, 'stories');
+  const postsCollection = collection(db, 'posts');
   // Create a query to get only published stories, ordered by creation date
   const q = query(
-    storiesCollection, 
-    where('status', '==', 'published'), 
+    postsCollection,
+    where('status', '==', 'published'),
     orderBy('createdAt', 'desc')
   );
   
@@ -23,6 +23,12 @@ async function getStories() {
         // Convert Firestore timestamp to a serializable format (ISO string)
         createdAt: data.createdAt?.toDate().toISOString() || null,
         updatedAt: data.updatedAt?.toDate().toISOString() || null,
+        // Format data for BlogPostCard component
+        image: data.imageUrl || data.image,
+        content: data.story || data.content,
+        date: data.createdAt?.toDate().toLocaleDateString() || new Date().toLocaleDateString(),
+        author: data.name || data.author || 'Anonymous',
+        slug: data.slug || doc.id, // Use document ID as fallback slug
       };
     });
     return stories;

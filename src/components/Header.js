@@ -15,7 +15,7 @@ import {
   MapPin, // 📍 Location icon
 } from 'lucide-react';
 
-export default function Header() {
+export function HeaderContent() {
   const [currentDate, setCurrentDate] = useState('');
   const [currentTime, setCurrentTime] = useState('');
   const [weatherData, setWeatherData] = useState(null);
@@ -110,54 +110,59 @@ export default function Header() {
   }, [WEATHER_API_URL]);
 
   return (
-    <header className="bg-gray-100 text-gray-600 border-b border-gray-200 font-inter">
-      <div className="container mx-auto px-6 py-2 flex flex-col sm:flex-row justify-between items-center text-sm rounded-lg">
-        <div className="flex flex-col sm:flex-row items-center divide-y sm:divide-y-0 sm:divide-x divide-gray-300 mb-2 sm:mb-0">
-          <div className="pb-2 sm:pb-0 sm:pr-3 font-medium">{currentDate}</div>
-          <div className="py-2 sm:py-0 sm:px-3">{currentTime}</div>
-          <div className="pt-2 sm:pt-0 sm:pl-3 flex items-center space-x-2">
-            {loadingWeather ? (
-              <span className="animate-pulse">Loading weather...</span>
-            ) : weatherError ? (
-              <span className="text-red-500">Error: {weatherError}</span>
-            ) : weatherData ? (
-              <>
-                {weatherData.icon}
-                <span>
-                  {weatherData.condition}, {weatherData.temperature}
-                </span>
-                <a
-                  href="https://www.google.com/maps/dir/?api=1&destination=P+P+Savani+University,+Surat,+Gujarat"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center ml-2 text-blue-600 hover:text-blue-800 underline"
-                >
-                  <MapPin className="w-4 h-4 mr-1" />
-                  P P Savani University
-                </a>
-              </>
-            ) : (
-              <span>Weather N/A</span>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <a href="https://www.facebook.com/profile.php?id=61577874447651" aria-label="Facebook" className="hover:text-blue-600 transition-colors duration-300">
-            <Facebook size={18} />
-          </a>
-          <a href="https://x.com/PPSUChronicles" aria-label="Twitter" className="hover:text-blue-400 transition-colors duration-300">
-            <Twitter size={18} />
-          </a>
-          <a href="https://www.instagram.com/theppsuchronicles/" aria-label="Instagram" className="hover:text-pink-500 transition-colors duration-300">
-            <Instagram size={18} />
-          </a>
-          <a href="https://www.linkedin.com/in/the-ppsu-chronicles-213912371/" aria-label="LinkedIn" className="hover:text-blue-700 transition-colors duration-300">
-            <Linkedin size={18} />
-          </a>
+    <div className="container mx-auto px-6 py-2 flex flex-col sm:flex-row justify-between items-center text-sm rounded-lg">
+      <div className="flex flex-col sm:flex-row items-center divide-y sm:divide-y-0 sm:divide-x divide-gray-300 mb-2 sm:mb-0">
+        <div className="pb-2 sm:pb-0 sm:pr-3 font-medium">{currentDate}</div>
+        <div className="py-2 sm:py-0 sm:px-3">{currentTime}</div>
+        <div className="pt-2 sm:pt-0 sm:pl-3 flex items-center space-x-2">
+          {loadingWeather ? (
+            <span className="animate-pulse">Loading weather...</span>
+          ) : weatherError ? (
+            <span className="text-red-500">Error: {weatherError}</span>
+          ) : weatherData ? (
+            <>
+              {weatherData.icon}
+              <span>
+                {weatherData.condition}, {weatherData.temperature}
+              </span>
+              <a
+                href="https://www.google.com/maps/dir/?api=1&destination=P+P+Savani+University,+Surat,+Gujarat"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center ml-2 text-blue-600 hover:text-blue-800 underline"
+              >
+                <MapPin className="w-4 h-4 mr-1" />
+                P P Savani University
+              </a>
+            </>
+          ) : (
+            <span>Weather N/A</span>
+          )}
         </div>
       </div>
-    </header>
+
+      <div className="flex items-center space-x-4">
+        <a href="https://www.facebook.com/profile.php?id=61577874447651" aria-label="Facebook" className="hover:text-blue-600 transition-colors duration-300">
+          <Facebook size={18} />
+        </a>
+        <a href="https://x.com/PPSUChronicles" aria-label="Twitter" className="hover:text-blue-400 transition-colors duration-300">
+          <Twitter size={18} />
+        </a>
+        <a href="https://www.instagram.com/theppsuchronicles/" aria-label="Instagram" className="hover:text-pink-500 transition-colors duration-300">
+          <Instagram size={18} />
+        </a>
+        <a href="https://www.linkedin.com/in/the-ppsu-chronicles-213912371/" aria-label="LinkedIn" className="hover:text-blue-700 transition-colors duration-300">
+          <Linkedin size={18} />
+        </a>
+      </div>
+    </div>
   );
 }
 
+export default function Header() {
+  return (
+    <header className="bg-gray-100 text-gray-600 border-b border-gray-200 font-inter hidden md:block">
+      <HeaderContent />
+    </header>
+  );
+}
