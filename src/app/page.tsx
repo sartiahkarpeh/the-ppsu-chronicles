@@ -180,7 +180,7 @@ export default async function HomePage() {
                 { icon: <Calendar size={32} />, title: "Campus Events", href: "/events" },
                 { icon: <Camera size={32} />, title: "Media Gallery", href: "/media" },
                 { icon: <Mic size={32} />, title: "Student Voice", href: "/student-voice" },
-              ].map((item, index) => (
+              ].map((item) => (
                 <div key={item.title}>
                   <QuickLinkCard icon={item.icon} title={item.title} href={item.href} />
                 </div>
@@ -197,7 +197,7 @@ export default async function HomePage() {
             </h2>
             {featuredStories.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-                {featuredStories.map((post, index) => (
+                {featuredStories.map((post) => (
                   <div key={post.id}>
                     <BlogPostCard post={post} />
                   </div>

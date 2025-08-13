@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import Image from 'next/image';
 import { db, storage, auth } from '../../../firebase/config'; // Adjust this path if needed
 import {
   collection,
@@ -105,7 +106,7 @@ export default function SuperAdminDashboard() {
   }, [router]);
 
   // --- Content Type Configuration ---
-  const contentTypes = {
+  const contentTypes = useMemo(() => ({
     dashboard: { name: 'Dashboard', collectionName: null, fields: [] },
     stories: { name: 'Student Stories', collectionName: 'posts', fields: ['title', 'author', 'content', 'tags', 'youtubeUrl'] },
     campus_news: { name: 'Campus News', collectionName: 'events', fields: ['title', 'summary', 'content', 'tags'] },
@@ -114,13 +115,9 @@ export default function SuperAdminDashboard() {
     campus_events: { name: 'Campus Events', collectionName: 'events', fields: ['title', 'date', 'time', 'location', 'description', 'category'] },
     upcoming_events: { name: 'Upcoming Events', collectionName: 'upcomingEvents', fields: ['title', 'date', 'time', 'location', 'description', 'category', 'registerLink'] },
     student_voice: { name: 'Student Voice Submissions', collectionName: 'submissions', fields: [] },
-    live_streams: {
-      name: 'Live Streams',
-      collectionName: 'live_streams',
-      fields: ['title', 'description', 'streamKey', 'status']
-    },
+    live_streams: { name: 'Live Streams', collectionName: 'live_streams', fields: ['title', 'description', 'streamKey', 'status'] },
     contact_messages: { name: 'Contact Messages', collectionName: 'contactmessages', fields: [] },
-  };
+  }), []);
 
 
   const currentConfig = contentTypes[currentView];
@@ -160,7 +157,7 @@ export default function SuperAdminDashboard() {
     return () => {
       unsubs.forEach((u) => u && u());
     };
-  }, []);
+  }, [contentTypes]);
 
   const fetchLogs = useCallback(() => {
     const logsCollection = collection(db, 'logs');
@@ -624,10 +621,7 @@ export default function SuperAdminDashboard() {
       return selectedCategory === 'photo' || !selectedCategory;
     };
 
-    const shouldShowYouTubeField = () => {
-      if (!isMediaGallery) return currentConfig.fields.includes('youtubeUrl');
-      return ['highlight', 'vlog', 'podcast'].includes(selectedCategory);
-    };
+    // youtube field is derived from getFieldsForCategory
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
