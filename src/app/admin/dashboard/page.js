@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import Image from 'next/image';
 import { db, storage, auth } from '../../../firebase/config'; // Adjust this path if needed
 import {
   collection,
@@ -713,7 +712,10 @@ export default function SuperAdminDashboard() {
                   <div className="mt-1 flex items-center space-x-6">
                     <div className="shrink-0">
                       {imagePreview ? (
-                        <img className="h-24 w-24 object-cover rounded-md" src={imagePreview} alt="Current" />
+                        <div className="h-24 w-24 relative">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img className="h-24 w-24 object-cover rounded-md" src={imagePreview} alt="Current" />
+                        </div>
                       ) : (
                         <div className="h-24 w-24 bg-gray-200 rounded-md flex items-center justify-center text-gray-400">Preview</div>
                       )}

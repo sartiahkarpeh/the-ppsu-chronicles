@@ -104,7 +104,7 @@ export default async function EventsPage() {
                     ) : (
                         <div className="text-center py-12 bg-white rounded-lg shadow-sm">
                             <p className="text-gray-500 text-lg">No past events to display.</p>
-                            <p className="text-gray-400 text-sm mt-2">Past events will appear here once they're completed.</p>
+                            <p className="text-gray-400 text-sm mt-2">Past events will appear here once they&apos;re completed.</p>
                         </div>
                     )}
                 </section>

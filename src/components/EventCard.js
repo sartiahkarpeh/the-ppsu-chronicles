@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { Calendar, MapPin, Clock } from 'lucide-react';
+import { MapPin, Clock } from 'lucide-react';
 
 export default function EventCard({ event }) {
   const eventDate = new Date(event.date);
@@ -28,7 +28,7 @@ export default function EventCard({ event }) {
         <div className="flex-grow">
           <span className="text-xs font-semibold text-secondary uppercase tracking-wider">{event.category}</span>
           <h3 className="font-bold text-lg text-text-primary mt-1 mb-2">{event.title}</h3>
-                    {event.description && (
+          {event.description && (
             <p className="text-sm text-gray-600 mb-2">
               {event.description}
             </p>
