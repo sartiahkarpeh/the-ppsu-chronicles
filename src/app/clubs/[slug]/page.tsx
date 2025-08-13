@@ -11,9 +11,7 @@ export async function generateStaticParams() {
   }));
 }
 
-type ClubDetailPageProps = { params: { slug: string } };
-
-export default function ClubDetailPage({ params }: ClubDetailPageProps) {
+export default function ClubDetailPage({ params }: { params: { slug: string } }) {
   const { slug } = params;
   const club = clubs.find(c => c.slug === slug);
 
