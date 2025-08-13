@@ -26,10 +26,12 @@ export default function LivePage() {
     if (stream && videoRef.current) {
       if (Hls.isSupported()) {
         const hls = new Hls();
-        hls.loadSource(`http://localhost:8000/live/${stream.streamKey}/index.m3u8`);
+        const base = process.env.NEXT_PUBLIC_STREAM_BASE_URL || window.location.origin.replace('http://', 'https://');
+        hls.loadSource(`${base}/live/${stream.streamKey}/index.m3u8`);
         hls.attachMedia(videoRef.current);
       } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-        videoRef.current.src = `http://localhost:8000/live/${stream.streamKey}/index.m3u8`;
+        const base = process.env.NEXT_PUBLIC_STREAM_BASE_URL || window.location.origin.replace('http://', 'https://');
+        videoRef.current.src = `${base}/live/${stream.streamKey}/index.m3u8`;
       }
     }
   }, [stream]);

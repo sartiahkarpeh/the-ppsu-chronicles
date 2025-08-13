@@ -10,6 +10,8 @@ import { format, isToday, isThisWeek, parseISO } from 'date-fns';
 import Footer from '../components/Footer';
 import Header from '../components/Header';
 
+export const revalidate = 60;
+
 // Fetch the latest 3 published stories from Firebase
 async function getFeaturedStories() {
   const postsCollection = collection(db, 'posts');

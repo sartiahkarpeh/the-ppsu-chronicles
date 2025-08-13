@@ -2,6 +2,8 @@ import { db } from '../../firebase/config';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import BlogPostCard from '../../components/BlogPostCard';
 
+export const revalidate = 60;
+
 // Fetches all published stories from Firestore
 async function getStories() {
   const postsCollection = collection(db, 'posts');
@@ -11,7 +13,7 @@ async function getStories() {
     where('status', '==', 'published'),
     orderBy('createdAt', 'desc')
   );
-  
+
   try {
     const storySnapshot = await getDocs(q);
     // Process snapshot to format data for the component

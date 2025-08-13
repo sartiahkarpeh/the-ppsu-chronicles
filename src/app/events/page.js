@@ -2,6 +2,8 @@ import { db } from '../../firebase/config';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import EventCard from '../../components/EventCard';
 
+export const revalidate = 60;
+
 // Fetches upcoming events
 async function getUpcomingEvents() {
     const upcomingEventsCollection = collection(db, 'upcomingEvents');

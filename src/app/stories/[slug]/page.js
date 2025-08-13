@@ -5,6 +5,8 @@ import { notFound } from 'next/navigation';
 import CommentSection from '../../../components/CommentSection';
 import ShareButtons from '../../../components/ShareButtons';
 
+export const revalidate = 60;
+
 // Fetches a single story by its slug
 async function getStory(slug) {
   const postsCollection = collection(db, 'posts');

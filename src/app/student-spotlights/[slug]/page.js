@@ -1,4 +1,5 @@
 import Image from 'next/image';
+export const revalidate = 60;
 import { db } from '../../../firebase/config';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
