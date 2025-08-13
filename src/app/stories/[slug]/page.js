@@ -1,4 +1,5 @@
 import { db } from '../../../firebase/config';
+import Image from 'next/image';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import CommentSection from '../../../components/CommentSection';
@@ -82,11 +83,15 @@ export default async function StoryPage({ params }) {
     <div className="container mx-auto px-4 py-12">
       <article className="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
         {story.imageUrl && (
-          <img
-            src={story.imageUrl}
-            alt={story.title}
-            className="w-full h-96 object-cover rounded-t-lg mb-8"
-          />
+          <div className="relative w-full h-96 mb-8">
+            <Image
+              src={story.imageUrl}
+              alt={story.title}
+              fill
+              className="object-cover rounded-t-lg"
+              priority={false}
+            />
+          </div>
         )}
         <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">{story.title}</h1>
         <div className="text-gray-500 mb-6">

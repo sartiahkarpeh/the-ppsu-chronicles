@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { db } from '../../../firebase/config';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
@@ -68,11 +69,13 @@ export default async function StudentSpotlightPage({ params }) {
         <div className="bg-gray-50 py-16">
             <div className="container mx-auto px-4">
                 <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden md:flex">
-                    <div className="md:w-1/3">
-                        <img
-                            className="h-full w-full object-cover"
-                            src={spotlight.imageUrl || 'https://placehold.co/400x600/a2d2ff/ffffff?text=Spotlight'}
+                    <div className="md:w-1/3 relative min-h-[400px]">
+                        <Image
+                            src={spotlight.imageUrl || '/ppsu.png'}
                             alt={spotlight.studentName}
+                            fill
+                            className="object-cover"
+                            priority={false}
                         />
                     </div>
                     <div className="p-8 md:w-2/3">

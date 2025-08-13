@@ -228,6 +228,7 @@ export default function StoryForm() {
               />
               {imagePreview && (
                 <div className="mt-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={imagePreview} alt="Image preview" className="w-48 h-auto rounded-lg shadow-md" />
                 </div>
               )}

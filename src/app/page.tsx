@@ -229,9 +229,11 @@ export default async function HomePage() {
                     className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-card-bg rounded-2xl shadow-lg p-6 sm:p-8 items-center"
                   >
                     <div className="flex justify-center">
-                      <img
-                        src={student.image}
+                      <Image
+                        src={student.image || '/ppsu.png'}
                         alt={student.name}
+                        width={160}
+                        height={160}
                         className="w-28 h-28 sm:w-36 sm:h-36 md:w-40 md:h-40 rounded-full object-cover border-4 border-secondary"
                       />
                     </div>
@@ -262,7 +264,7 @@ export default async function HomePage() {
         <section className="py-14 md:py-24 section-bg">
           <div className="container mx-auto px-4 sm:px-6">
             <h2 className="text-3xl md:text-4xl font-extrabold text-text-primary text-center mb-12">
-              What's Happening on Campus
+              What&apos;s Happening on Campus
             </h2>
 
             {featuredEvents.length > 0 ? (
