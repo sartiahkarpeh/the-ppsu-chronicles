@@ -16,9 +16,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "The PPSU Chronicles",
   description: "The PPSU Chronicles is the official student-run media body of P. P. Savani University, sharing stories, ideas, events, and campus culture.",
-  icons: {
-    icon: "/logo1.jpg",
-  },
 };
 
 export default function RootLayout({
@@ -28,6 +25,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/logo1.jpg" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
