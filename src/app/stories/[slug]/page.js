@@ -102,7 +102,7 @@ export default async function StoryPage({ params }) {
         </div>
 
         {/* Render content safely */}
-        <div className="prose lg:prose-xl max-w-none text-gray-800" dangerouslySetInnerHTML={{ __html: story.content }}></div>
+        <div className="prose lg:prose-xl max-w-none text-gray-800 whitespace-pre-wrap">{story.content}</div>
 
         {/* Share Section */}
         <div className="mt-8 flex items-center gap-4">

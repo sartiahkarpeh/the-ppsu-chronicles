@@ -23,7 +23,7 @@ export default function BlogPostCard({ post }) {
         <h3 className="font-bold text-xl text-text-primary mb-2 flex-grow">
           <Link href={`/stories/${post.slug || post.id}`} className="hover:underline">{post.title}</Link>
         </h3>
-        <p className="text-text-secondary text-sm mb-4 line-clamp-3">
+        <p className="text-text-secondary text-sm mb-4 line-clamp-3 whitespace-pre-wrap">
           {post.content.substring(0, 100)}...
         </p>
         <div className="text-xs text-text-secondary flex items-center justify-between mt-auto pt-4 border-t border-gray-100">

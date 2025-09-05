@@ -108,7 +108,7 @@ export default function SuperAdminDashboard() {
   const contentTypes = useMemo(() => ({
     dashboard: { name: 'Dashboard', collectionName: null, fields: [] },
     stories: { name: 'Student Stories', collectionName: 'posts', fields: ['title', 'author', 'content', 'tags', 'youtubeUrl'] },
-    campus_news: { name: 'Campus News', collectionName: 'events', fields: ['title', 'summary', 'content', 'tags'] },
+    campus_news: { name: 'Campus News', collectionName: 'events', fields: ['title', 'summary', 'content', 'tags', 'category'] },
     student_spotlights: { name: 'Student Spotlights', collectionName: 'spotlights', fields: ['studentName', 'major', 'quote', 'content', 'stars'] },
     media_gallery: { name: 'Media Gallery', collectionName: 'media_videos', fields: ['category', 'title', 'description', 'youtubeUrl'] },
     campus_events: { name: 'Campus Events', collectionName: 'events', fields: ['title', 'date', 'time', 'location', 'description', 'category'] },

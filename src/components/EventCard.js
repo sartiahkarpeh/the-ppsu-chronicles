@@ -29,7 +29,7 @@ export default function EventCard({ event }) {
           <span className="text-xs font-semibold text-secondary uppercase tracking-wider">{event.category}</span>
           <h3 className="font-bold text-lg text-text-primary mt-1 mb-2">{event.title}</h3>
           {event.description && (
-            <p className="text-sm text-gray-600 mb-2">
+            <p className="text-sm text-gray-600 mb-2 whitespace-pre-wrap">
               {event.description}
             </p>
           )}

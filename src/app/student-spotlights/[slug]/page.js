@@ -85,7 +85,7 @@ export default async function StudentSpotlightPage({ params }) {
                         <blockquote className="mt-4 text-gray-500 italic border-l-4 border-indigo-200 pl-4">
                             &quot;{spotlight.quote}&quot;
                         </blockquote>
-                        <div className="mt-6 prose max-w-none text-gray-700" dangerouslySetInnerHTML={{ __html: spotlight.content }}></div>
+                        <div className="mt-6 prose max-w-none text-gray-700 whitespace-pre-wrap">{spotlight.content}</div>
                     </div>
                 </div>
             </div>
