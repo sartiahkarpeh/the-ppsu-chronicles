@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { db } from '../../firebase/config';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 
@@ -127,10 +128,11 @@ export default function MediaPage() {
                                     className="absolute inset-0 w-full h-full"
                                     aria-label={`Play video: ${item.title}`}
                                 >
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
+                                    <Image
                                         src={getYouTubeThumbnail(item.youtubeUrl)}
                                         alt={item.title}
+                                        width={400}
+                                        height={250}
                                         className="w-full h-full object-cover"
                                     />
                                     <span className="absolute inset-0 flex items-center justify-center">
@@ -174,9 +176,11 @@ export default function MediaPage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                             {photoStories.map((item) => (
                                 <div key={item.id} className="group bg-white rounded-lg shadow-lg overflow-hidden transform hover:scale-105 transition-transform duration-300">
-                                    <img
+                                    <Image
                                         src={item.imageUrl}
                                         alt={item.title}
+                                        width={400}
+                                        height={224}
                                         className="w-full h-56 object-cover"
                                     />
                                     <div className="p-4">

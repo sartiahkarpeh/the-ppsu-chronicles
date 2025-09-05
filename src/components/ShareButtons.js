@@ -1,10 +1,10 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { FaFacebookF, FaLinkedinIn, FaWhatsapp } from "react-icons/fa";
 import { FaXTwitter } from "react-icons/fa6";
 import { MdEmail } from "react-icons/md";
 
-export default function ShareButtons({ title }) {
+export default function ShareButtons() {
     const [url, setUrl] = React.useState("");
 
     React.useEffect(() => {
