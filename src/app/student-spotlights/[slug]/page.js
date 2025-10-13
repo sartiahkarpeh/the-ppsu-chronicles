@@ -59,6 +59,48 @@ export async function generateStaticParams() {
     }
 }
 
+// Generate metadata for social sharing
+export async function generateMetadata({ params }) {
+    const spotlight = await getSpotlight(params.slug);
+
+    if (!spotlight) {
+        return {
+            title: 'Student Spotlight Not Found',
+        };
+    }
+
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://the-ppsu-chronicles.vercel.app';
+    const imageUrl = spotlight.imageUrl || `${siteUrl}/ppsu.png`;
+
+    return {
+        title: `${spotlight.studentName} - Student Spotlight`,
+        description: spotlight.quote || spotlight.content?.substring(0, 160) || `Meet ${spotlight.studentName}, a student at P. P. Savani University`,
+        openGraph: {
+            title: `${spotlight.studentName} - Student Spotlight`,
+            description: spotlight.quote || spotlight.content?.substring(0, 160) || `Meet ${spotlight.studentName}, a student at P. P. Savani University`,
+            url: `${siteUrl}/student-spotlights/${params.slug}`,
+            siteName: 'The PPSU Chronicles',
+            images: [
+                {
+                    url: imageUrl,
+                    width: 1200,
+                    height: 630,
+                    alt: spotlight.studentName,
+                },
+            ],
+            locale: 'en_US',
+            type: 'article',
+            publishedTime: spotlight.createdAt,
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: `${spotlight.studentName} - Student Spotlight`,
+            description: spotlight.quote || spotlight.content?.substring(0, 160) || `Meet ${spotlight.studentName}, a student at P. P. Savani University`,
+            images: [imageUrl],
+        },
+    };
+}
+
 export default async function StudentSpotlightPage({ params }) {
     const spotlight = await getSpotlight(params.slug);
 
