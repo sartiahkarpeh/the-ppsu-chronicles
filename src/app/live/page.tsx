@@ -1,97 +1,14 @@
 // src/app/live/page.tsx
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { useLiveUpdates } from "@/app/live/hooks/useLiveUpdates";
 import LiveCard from "@/app/live/components/LiveCard";
-import NotificationBanner from "@/app/live/components/NotificationBanner";
-import { LiveGame } from "@/app/live/types";
-import { notifyScoreUpdate, notifyGameStart, notifyGameEnd } from "@/app/live/hooks/useNotifications";
-import { useLiveActivity } from "@/app/live/hooks/useLiveActivity";
 
 export default function LivePage() {
-  const [mounted, setMounted] = useState(false);
   const { games, loading, error } = useLiveUpdates();
-  const previousGames = useRef<Map<string, LiveGame>>(new Map());
-  const { startLiveActivity, updateLiveActivity, endLiveActivity, showDynamicIsland } = useLiveActivity();
-
-  // Ensure component is mounted before accessing browser APIs
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const footballGames = games.filter((game) => game.sport === "Football");
   const basketballGames = games.filter((game) => game.sport === "Basketball");
-
-  // Monitor game changes and send notifications
-  useEffect(() => {
-    if (!mounted || loading || games.length === 0) return;
-
-    games.forEach((game) => {
-      if (!game.id) return;
-
-      const prevGame = previousGames.current.get(game.id);
-
-      if (!prevGame) {
-        // New game added
-        previousGames.current.set(game.id, game);
-        
-        if (game.status === "LIVE") {
-          try {
-            notifyGameStart(game);
-            startLiveActivity(game);
-            showDynamicIsland(game);
-          } catch (err) {
-            console.error("Error starting game notifications:", err);
-          }
-        }
-        return;
-      }
-
-      // Check for score changes
-      if (prevGame.score !== game.score) {
-        try {
-          notifyScoreUpdate(game, prevGame.score, game.score);
-          updateLiveActivity(game);
-          showDynamicIsland(game);
-        } catch (err) {
-          console.error("Error updating score notifications:", err);
-        }
-      }
-
-      // Check for status changes
-      if (prevGame.status !== game.status) {
-        try {
-          if (game.status === "LIVE") {
-            notifyGameStart(game);
-            startLiveActivity(game);
-          } else if (game.status === "FULLTIME") {
-            notifyGameEnd(game);
-            endLiveActivity(game.id);
-          } else {
-            updateLiveActivity(game);
-          }
-        } catch (err) {
-          console.error("Error changing game status notifications:", err);
-        }
-      }
-
-      // Update reference
-      previousGames.current.set(game.id, game);
-    });
-
-    // Clean up removed games
-    previousGames.current.forEach((prevGame, gameId) => {
-      if (!games.find(g => g.id === gameId)) {
-        previousGames.current.delete(gameId);
-        try {
-          endLiveActivity(gameId);
-        } catch (err) {
-          console.error("Error ending live activity:", err);
-        }
-      }
-    });
-  }, [mounted, games, loading, startLiveActivity, updateLiveActivity, endLiveActivity, showDynamicIsland]);
 
   if (loading) {
     return (
@@ -193,9 +110,6 @@ export default function LivePage() {
           </div>
         </div>
       </div>
-
-      {/* Notification Banner - Only show when mounted */}
-      {mounted && <NotificationBanner />}
     </div>
   );
 }
