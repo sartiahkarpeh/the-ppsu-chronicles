@@ -10,7 +10,7 @@ export const useNotifications = () => {
 
   useEffect(() => {
     // Check if notifications are supported
-    if (typeof window !== "undefined" && "Notification" in window) {
+    if (typeof window !== "undefined" && typeof window.Notification !== "undefined") {
       setIsSupported(true);
       setPermission(Notification.permission);
     }
@@ -52,9 +52,7 @@ export const useNotifications = () => {
       body,
       icon: icon || "/ppsu.png",
       badge: "/ppsu.png",
-      vibrate: [200, 100, 200],
       tag: "live-score-update",
-      renotify: true,
       requireInteraction: false,
       silent: false,
     };
@@ -83,6 +81,7 @@ export const useNotifications = () => {
 };
 
 export const notifyScoreUpdate = (game: LiveGame, oldScore: string, newScore: string) => {
+  if (typeof window === "undefined" || typeof window.Notification === "undefined") return;
   if (Notification.permission !== "granted") return;
 
   const title = `⚽🏀 Score Update: ${game.teamA.name} vs ${game.teamB.name}`;
@@ -92,9 +91,7 @@ export const notifyScoreUpdate = (game: LiveGame, oldScore: string, newScore: st
     body,
     icon: game.teamA.imageUrl || "/ppsu.png",
     badge: "/ppsu.png",
-    vibrate: [200, 100, 200, 100, 200],
     tag: `game-${game.id}`,
-    renotify: true,
     requireInteraction: false,
     data: { gameId: game.id, type: "score_update" },
   };
@@ -108,6 +105,7 @@ export const notifyScoreUpdate = (game: LiveGame, oldScore: string, newScore: st
 };
 
 export const notifyGameStart = (game: LiveGame) => {
+  if (typeof window === "undefined" || typeof window.Notification === "undefined") return;
   if (Notification.permission !== "granted") return;
 
   const sport = game.sport === "Football" ? "⚽" : "🏀";
@@ -118,7 +116,6 @@ export const notifyGameStart = (game: LiveGame) => {
     body,
     icon: game.teamA.imageUrl || "/ppsu.png",
     badge: "/ppsu.png",
-    vibrate: [300, 100, 300],
     tag: `game-start-${game.id}`,
     requireInteraction: true,
     data: { gameId: game.id, type: "game_start" },
@@ -128,6 +125,7 @@ export const notifyGameStart = (game: LiveGame) => {
 };
 
 export const notifyGameEnd = (game: LiveGame) => {
+  if (typeof window === "undefined" || typeof window.Notification === "undefined") return;
   if (Notification.permission !== "granted") return;
 
   const sport = game.sport === "Football" ? "⚽" : "🏀";
@@ -138,7 +136,6 @@ export const notifyGameEnd = (game: LiveGame) => {
     body,
     icon: "/ppsu.png",
     badge: "/ppsu.png",
-    vibrate: [100, 50, 100, 50, 100],
     tag: `game-end-${game.id}`,
     requireInteraction: false,
     data: { gameId: game.id, type: "game_end" },
