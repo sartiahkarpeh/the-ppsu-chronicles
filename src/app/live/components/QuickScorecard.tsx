@@ -44,21 +44,55 @@ export default function QuickScorecard({ game, onClose }: QuickScorecardProps) {
       }
     }
     
-    // Parse existing time
-    if (game.time) {
+    // Calculate time from startTime if available, otherwise parse from game.time
+    if (game.status === "LIVE" && game.startTime) {
+      // Calculate elapsed time from startTime
+      const startDate = game.startTime instanceof Date ? game.startTime : game.startTime.toDate();
+      const elapsedMs = Date.now() - startDate.getTime();
+      const elapsedSeconds = Math.floor(elapsedMs / 1000);
+      
       if (isFootball) {
-        const match = game.time.match(/(\d+)[':]?(\d*)/);
-        if (match) {
-          setMinutes(parseInt(match[1]) || 0);
-          setSeconds(parseInt(match[2]) || 0);
-        }
+        // Football: count up
+        const mins = Math.floor(elapsedSeconds / 60);
+        const secs = elapsedSeconds % 60;
+        setMinutes(mins);
+        setSeconds(secs);
       } else {
+        // Basketball: count down from initial time
         const quarterMatch = game.time.match(/Q(\d+)/);
         const timeMatch = game.time.match(/(\d+):(\d+)/);
         if (quarterMatch) setQuarter(parseInt(quarterMatch[1]) || 1);
+        
+        let initialMinutes = 12;
+        let initialSeconds = 0;
         if (timeMatch) {
-          setMinutes(parseInt(timeMatch[1]) || 0);
-          setSeconds(parseInt(timeMatch[2]) || 0);
+          initialMinutes = parseInt(timeMatch[1]) || 12;
+          initialSeconds = parseInt(timeMatch[2]) || 0;
+        }
+        
+        const totalInitialSeconds = (initialMinutes * 60) + initialSeconds;
+        const remainingSeconds = Math.max(0, totalInitialSeconds - elapsedSeconds);
+        
+        setMinutes(Math.floor(remainingSeconds / 60));
+        setSeconds(remainingSeconds % 60);
+      }
+    } else {
+      // Fallback: Parse from game.time string
+      if (game.time) {
+        if (isFootball) {
+          const match = game.time.match(/(\d+)[':]?(\d*)/);
+          if (match) {
+            setMinutes(parseInt(match[1]) || 0);
+            setSeconds(parseInt(match[2]) || 0);
+          }
+        } else {
+          const quarterMatch = game.time.match(/Q(\d+)/);
+          const timeMatch = game.time.match(/(\d+):(\d+)/);
+          if (quarterMatch) setQuarter(parseInt(quarterMatch[1]) || 1);
+          if (timeMatch) {
+            setMinutes(parseInt(timeMatch[1]) || 0);
+            setSeconds(parseInt(timeMatch[2]) || 0);
+          }
         }
       }
     }
@@ -124,9 +158,11 @@ export default function QuickScorecard({ game, onClose }: QuickScorecardProps) {
         pausedAt: elapsedSeconds,
       };
       
-      // Set startTime if this is the first save and timer is running
-      if (!game.startTime && isTimerRunning) {
-        updateData.startTime = serverTimestamp();
+      // Set startTime if this is the first save for a LIVE match
+      if (!game.startTime && game.status === "LIVE") {
+        // Calculate what the startTime should be based on current elapsed time
+        const startTimeMs = Date.now() - (elapsedSeconds * 1000);
+        updateData.startTime = new Date(startTimeMs);
       }
       
       await updateDoc(doc(db, "liveGames", game.id), updateData);
