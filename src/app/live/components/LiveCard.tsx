@@ -28,57 +28,67 @@ export default function LiveCard({
 
   // Live timer effect
   useEffect(() => {
-    if (!isLive) return;
-    
-    // Parse initial time
-    let minutes = 0;
-    let seconds = 0;
-    
-    if (game.time) {
-      if (isFootball) {
-        const match = game.time.match(/(\d+)[':]?(\d*)/);
-        if (match) {
-          minutes = parseInt(match[1]) || 0;
-          seconds = parseInt(match[2]) || 0;
-        }
-      } else {
-        const timeMatch = game.time.match(/(\d+):(\d+)/);
-        if (timeMatch) {
-          minutes = parseInt(timeMatch[1]) || 0;
-          seconds = parseInt(timeMatch[2]) || 0;
-        }
-      }
+    if (!isLive) {
+      setLiveTime(game.time);
+      return;
     }
     
-    const interval = setInterval(() => {
+    // Calculate start time based on current time and pausedAt
+    let startTimestamp: number;
+    
+    if (game.startTime) {
+      // Use the stored start time
+      const startDate = game.startTime instanceof Date ? game.startTime : game.startTime.toDate();
+      startTimestamp = startDate.getTime();
+    } else {
+      // Fallback: calculate start time from current time minus pausedAt
+      const pausedSeconds = game.pausedAt || 0;
+      startTimestamp = Date.now() - (pausedSeconds * 1000);
+    }
+    
+    const updateTimer = () => {
+      const now = Date.now();
+      const elapsedMs = now - startTimestamp;
+      const elapsedSeconds = Math.floor(elapsedMs / 1000);
+      
+      let minutes = Math.floor(elapsedSeconds / 60);
+      let seconds = elapsedSeconds % 60;
+      
       if (isFootball) {
-        // Football: count up
-        seconds++;
-        if (seconds >= 60) {
-          minutes++;
-          seconds = 0;
-        }
+        // Football: count up from elapsed time
         setLiveTime(`${minutes}'${seconds > 0 ? seconds.toString().padStart(2, '0') : ''}`);
       } else {
-        // Basketball: count down
-        if (seconds <= 0) {
-          if (minutes <= 0) {
-            clearInterval(interval);
-            return;
-          }
-          minutes--;
-          seconds = 59;
-        } else {
-          seconds--;
+        // Basketball: count down from initial time
+        // Parse the initial time from game.time
+        const timeMatch = game.time.match(/(\d+):(\d+)/);
+        let initialMinutes = 12; // Default quarter length
+        let initialSeconds = 0;
+        
+        if (timeMatch) {
+          initialMinutes = parseInt(timeMatch[1]) || 12;
+          initialSeconds = parseInt(timeMatch[2]) || 0;
         }
+        
+        const totalInitialSeconds = (initialMinutes * 60) + initialSeconds;
+        const remainingSeconds = Math.max(0, totalInitialSeconds - elapsedSeconds);
+        
+        minutes = Math.floor(remainingSeconds / 60);
+        seconds = remainingSeconds % 60;
+        
         const quarterMatch = game.time.match(/Q(\d+)/);
         const quarter = quarterMatch ? quarterMatch[1] : "1";
         setLiveTime(`Q${quarter} ${minutes}:${seconds.toString().padStart(2, '0')}`);
       }
-    }, 1000);
+    };
+    
+    // Update immediately
+    updateTimer();
+    
+    // Then update every second
+    const interval = setInterval(updateTimer, 1000);
     
     return () => clearInterval(interval);
-  }, [isLive, game.time, isFootball]);
+  }, [isLive, game.time, game.startTime, game.pausedAt, isFootball]);
 
   const formatLastUpdated = (date: any) => {
     if (!date) return "";

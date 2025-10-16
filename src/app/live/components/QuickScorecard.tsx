@@ -112,11 +112,24 @@ export default function QuickScorecard({ game, onClose }: QuickScorecardProps) {
         ? `${minutes}'${seconds > 0 ? seconds.toString().padStart(2, '0') : ''}`
         : `Q${quarter} ${minutes}:${seconds.toString().padStart(2, '0')}`;
       
-      await updateDoc(doc(db, "liveGames", game.id), {
+      // Calculate elapsed seconds for pausedAt
+      const elapsedSeconds = isFootball 
+        ? (minutes * 60) + seconds
+        : ((12 * 60) - ((minutes * 60) + seconds)); // For basketball, store elapsed from start
+      
+      const updateData: any = {
         score: scoreStr,
         time: timeStr,
         lastUpdated: serverTimestamp(),
-      });
+        pausedAt: elapsedSeconds,
+      };
+      
+      // Set startTime if this is the first save and timer is running
+      if (!game.startTime && isTimerRunning) {
+        updateData.startTime = serverTimestamp();
+      }
+      
+      await updateDoc(doc(db, "liveGames", game.id), updateData);
       
       // Don't close, keep updating
     } catch (error) {

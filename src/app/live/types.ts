@@ -22,6 +22,8 @@ export interface LiveGame {
   location: string;
   description?: string;
   lastUpdated: Timestamp | Date;
+  startTime?: Timestamp | Date; // When the match actually started
+  pausedAt?: number; // Seconds elapsed when paused
 }
 
 export interface LiveEditorProps {
