@@ -73,49 +73,6 @@ export async function generateStaticParams() {
   }
 }
 
-// Generate metadata for social sharing
-export async function generateMetadata({ params }) {
-  const story = await getStory(params.slug);
-
-  if (!story) {
-    return {
-      title: 'Story Not Found',
-    };
-  }
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://the-ppsu-chronicles.vercel.app';
-  const imageUrl = story.imageUrl || `${siteUrl}/ppsu.png`;
-
-  return {
-    title: story.title,
-    description: story.content?.substring(0, 160) || 'Read this story on The PPSU Chronicles',
-    openGraph: {
-      title: story.title,
-      description: story.content?.substring(0, 160) || 'Read this story on The PPSU Chronicles',
-      url: `${siteUrl}/stories/${params.slug}`,
-      siteName: 'The PPSU Chronicles',
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: story.title,
-        },
-      ],
-      locale: 'en_US',
-      type: 'article',
-      publishedTime: story.createdAt,
-      authors: [story.author || 'Anonymous'],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: story.title,
-      description: story.content?.substring(0, 160) || 'Read this story on The PPSU Chronicles',
-      images: [imageUrl],
-    },
-  };
-}
-
 export default async function StoryPage({ params }) {
   const story = await getStory(params.slug);
 
