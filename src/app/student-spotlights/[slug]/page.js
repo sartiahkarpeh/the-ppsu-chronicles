@@ -19,13 +19,15 @@ export async function generateMetadata({ params }) {
     const baseUrl = 'https://www.theppsuchronicles.com';
     const spotlightUrl = `${baseUrl}/student-spotlights/${params.slug}`;
     const imageUrl = spotlight.imageUrl || `${baseUrl}/ppsu.png`; // Use spotlight image or fallback
+    const studentName = spotlight.studentName || spotlight.name || 'Student';
+    const description = spotlight.bio?.substring(0, 160) || spotlight.content?.substring(0, 160) || `Meet ${studentName}, featured in The PPSU Chronicles Student Spotlight`;
 
     return {
-        title: `${spotlight.name} - Student Spotlight`,
-        description: spotlight.bio?.substring(0, 160) || `Meet ${spotlight.name}, featured in The PPSU Chronicles Student Spotlight`,
+        title: `${studentName} - Student Spotlight`,
+        description: description,
         openGraph: {
-            title: `${spotlight.name} - Student Spotlight`,
-            description: spotlight.bio?.substring(0, 160) || `Meet ${spotlight.name}, featured in The PPSU Chronicles Student Spotlight`,
+            title: `${studentName} - Student Spotlight`,
+            description: description,
             url: spotlightUrl,
             siteName: 'The PPSU Chronicles',
             images: [
@@ -33,7 +35,7 @@ export async function generateMetadata({ params }) {
                     url: imageUrl,
                     width: 1200,
                     height: 630,
-                    alt: spotlight.name,
+                    alt: studentName,
                 },
             ],
             locale: 'en_US',
@@ -41,8 +43,8 @@ export async function generateMetadata({ params }) {
         },
         twitter: {
             card: 'summary_large_image',
-            title: `${spotlight.name} - Student Spotlight`,
-            description: spotlight.bio?.substring(0, 160) || `Meet ${spotlight.name}, featured in The PPSU Chronicles Student Spotlight`,
+            title: `${studentName} - Student Spotlight`,
+            description: description,
             images: [imageUrl],
             creator: '@PPSUChronicles',
             site: '@PPSUChronicles',
