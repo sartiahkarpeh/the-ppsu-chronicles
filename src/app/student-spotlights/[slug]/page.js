@@ -3,6 +3,52 @@ export const revalidate = 60;
 import { db } from '../../../firebase/config';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
+import ShareButtons from '../../../components/ShareButtons';
+
+// Generate dynamic metadata for SEO and social sharing
+export async function generateMetadata({ params }) {
+    const spotlight = await getSpotlight(params.slug);
+
+    if (!spotlight) {
+        return {
+            title: 'Spotlight Not Found',
+            description: 'The student spotlight you are looking for does not exist.',
+        };
+    }
+
+    const baseUrl = 'https://www.theppsuchronicles.com';
+    const spotlightUrl = `${baseUrl}/student-spotlights/${params.slug}`;
+    const imageUrl = spotlight.imageUrl || `${baseUrl}/ppsu.png`; // Use spotlight image or fallback
+
+    return {
+        title: `${spotlight.name} - Student Spotlight`,
+        description: spotlight.bio?.substring(0, 160) || `Meet ${spotlight.name}, featured in The PPSU Chronicles Student Spotlight`,
+        openGraph: {
+            title: `${spotlight.name} - Student Spotlight`,
+            description: spotlight.bio?.substring(0, 160) || `Meet ${spotlight.name}, featured in The PPSU Chronicles Student Spotlight`,
+            url: spotlightUrl,
+            siteName: 'The PPSU Chronicles',
+            images: [
+                {
+                    url: imageUrl,
+                    width: 1200,
+                    height: 630,
+                    alt: spotlight.name,
+                },
+            ],
+            locale: 'en_US',
+            type: 'profile',
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: `${spotlight.name} - Student Spotlight`,
+            description: spotlight.bio?.substring(0, 160) || `Meet ${spotlight.name}, featured in The PPSU Chronicles Student Spotlight`,
+            images: [imageUrl],
+            creator: '@PPSUChronicles',
+            site: '@PPSUChronicles',
+        },
+    };
+}
 
 // Fetches a single spotlight by its slug
 async function getSpotlight(slug) {
@@ -86,6 +132,15 @@ export default async function StudentSpotlightPage({ params }) {
                             &quot;{spotlight.quote}&quot;
                         </blockquote>
                         <div className="mt-6 prose max-w-none text-gray-700 whitespace-pre-wrap">{spotlight.content}</div>
+                        
+                        {/* Share Section */}
+                        <div className="mt-8 pt-6 border-t border-gray-200">
+                            <span className="text-sm text-gray-500 font-semibold block mb-3">Share this spotlight:</span>
+                            <ShareButtons 
+                                title={`${spotlight.studentName} - Student Spotlight`} 
+                                description={spotlight.bio?.substring(0, 160) || spotlight.content?.substring(0, 160)} 
+                            />
+                        </div>
                     </div>
                 </div>
             </div>

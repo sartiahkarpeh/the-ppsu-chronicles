@@ -89,7 +89,7 @@ export default function NewsDetail({ params: paramsPromise }) {
 
         <div className="mt-8 border-t pt-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Share this article</h3>
-          <ShareButtons title={news.title} />
+          <ShareButtons title={news.title} description={news.content?.substring(0, 160)} />
         </div>
       </article>
     </div>

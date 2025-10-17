@@ -7,6 +7,53 @@ import ShareButtons from '../../../components/ShareButtons';
 
 export const revalidate = 60;
 
+// Generate dynamic metadata for SEO and social sharing
+export async function generateMetadata({ params }) {
+  const story = await getStory(params.slug);
+
+  if (!story) {
+    return {
+      title: 'Story Not Found',
+      description: 'The story you are looking for does not exist.',
+    };
+  }
+
+  const baseUrl = 'https://www.theppsuchronicles.com';
+  const storyUrl = `${baseUrl}/stories/${params.slug}`;
+  const imageUrl = story.imageUrl || `${baseUrl}/ppsu.png`; // Use story image or fallback to logo
+
+  return {
+    title: story.title,
+    description: story.content?.substring(0, 160) || 'Read this story on The PPSU Chronicles',
+    openGraph: {
+      title: story.title,
+      description: story.content?.substring(0, 160) || 'Read this story on The PPSU Chronicles',
+      url: storyUrl,
+      siteName: 'The PPSU Chronicles',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: story.title,
+        },
+      ],
+      locale: 'en_US',
+      type: 'article',
+      publishedTime: story.createdAt,
+      authors: [story.author || 'Anonymous'],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: story.title,
+      description: story.content?.substring(0, 160) || 'Read this story on The PPSU Chronicles',
+      images: [imageUrl],
+      creator: '@PPSUChronicles',
+      site: '@PPSUChronicles',
+    },
+  };
+}
+
 // Fetches a single story by its slug
 async function getStory(slug) {
   const postsCollection = collection(db, 'posts');
@@ -107,7 +154,7 @@ export default async function StoryPage({ params }) {
         {/* Share Section */}
         <div className="mt-8 flex items-center gap-4">
           <span className="text-sm text-gray-500 font-semibold">Share this story:</span>
-          <ShareButtons title={story.title} />
+          <ShareButtons title={story.title} description={story.content?.substring(0, 160)} />
         </div>
 
         {/* Optional: Render YouTube video if URL exists */}
