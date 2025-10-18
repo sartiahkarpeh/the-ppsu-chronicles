@@ -4,6 +4,8 @@
 import Image from "next/image";
 import { LiveGame } from "@/app/live/types";
 import { useState, useEffect } from "react";
+import LiveEventSchema from "@/app/live/components/LiveEventSchema";
+import LiveBadge from "@/app/live/components/LiveBadge";
 
 interface LiveCardProps {
   game: LiveGame;
@@ -105,19 +107,15 @@ export default function LiveCard({
   };
 
   return (
-    <div
-      className={`bg-white rounded-lg shadow-md p-6 border-l-4 ${sportColor} hover:shadow-lg transition-shadow relative`}
-    >
-      {/* Live Indicator */}
-      {isLive && (
-        <div className="absolute top-4 right-4 flex items-center gap-2">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-          </span>
-          <span className="text-red-600 font-bold text-sm">LIVE</span>
-        </div>
-      )}
+    <>
+      {/* Schema.org structured data for SEO and social media */}
+      {isLive && <LiveEventSchema game={game} />}
+      
+      <div
+        className={`bg-white rounded-lg shadow-md p-6 border-l-4 ${sportColor} hover:shadow-lg transition-shadow relative`}
+      >
+        {/* Live Badge - New improved badge */}
+        {isLive && <LiveBadge game={game} size="sm" position="absolute" />}
 
       {/* League and Location */}
       <div className="mb-4">
@@ -229,6 +227,7 @@ export default function LiveCard({
           )}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

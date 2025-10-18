@@ -3,12 +3,15 @@
 
 import { useLiveUpdates } from "@/app/live/hooks/useLiveUpdates";
 import LiveCard from "@/app/live/components/LiveCard";
+import { LiveBanner } from "@/app/live/components/LiveBadge";
 
 export default function LivePage() {
   const { games, loading, error } = useLiveUpdates();
 
   const footballGames = games.filter((game) => game.sport === "Football");
   const basketballGames = games.filter((game) => game.sport === "Basketball");
+  const liveGamesCount = games.filter((game) => game.status === "LIVE").length;
+  const hasLiveGames = liveGamesCount > 0;
 
   if (loading) {
     return (
@@ -36,17 +39,25 @@ export default function LivePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            🔴 Live Scores
-          </h1>
-          <p className="text-lg text-gray-600">
-            Real-time updates from ongoing matches
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Live Banner - Shows only when there are live matches */}
+      {hasLiveGames && (
+        <LiveBanner 
+          text={`${liveGamesCount} Live ${liveGamesCount === 1 ? 'Match' : 'Matches'} in Progress`} 
+        />
+      )}
+      
+      <div className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              🔴 Live Scores
+            </h1>
+            <p className="text-lg text-gray-600">
+              Real-time updates from ongoing matches
+            </p>
+          </div>
 
         {/* No Games Message */}
         {games.length === 0 && (
@@ -97,16 +108,17 @@ export default function LivePage() {
           </section>
         )}
 
-        {/* Auto-refresh indicator */}
-        <div className="mt-8 text-center">
-          <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-            </span>
-            <span className="text-sm text-gray-600">
-              Updates automatically in real-time
-            </span>
+          {/* Auto-refresh indicator */}
+          <div className="mt-8 text-center">
+            <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+              <span className="text-sm text-gray-600">
+                Updates automatically in real-time
+              </span>
+            </div>
           </div>
         </div>
       </div>

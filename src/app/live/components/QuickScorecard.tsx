@@ -196,10 +196,10 @@ export default function QuickScorecard({ game, onClose }: QuickScorecardProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div className={`bg-gradient-to-br ${isFootball ? 'from-green-50 to-green-100' : 'from-orange-50 to-orange-100'} rounded-2xl shadow-2xl max-w-4xl w-full p-6`}>
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className={`bg-gradient-to-br ${isFootball ? 'from-green-50 to-green-100' : 'from-orange-50 to-orange-100'} rounded-2xl shadow-2xl max-w-4xl w-full p-6 my-8 max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200`}>
+        {/* Header - Sticky */}
+        <div className={`flex justify-between items-center mb-6 sticky top-0 ${isFootball ? 'bg-green-50' : 'bg-orange-50'} z-10 pb-4 -mx-6 px-6`}>
           <div>
             <h2 className="text-3xl font-bold text-gray-800">
               {isFootball ? "⚽ Football" : "🏀 Basketball"} Scorecard
@@ -208,7 +208,8 @@ export default function QuickScorecard({ game, onClose }: QuickScorecardProps) {
           </div>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-3xl font-bold"
+            className="text-gray-500 hover:text-gray-700 text-3xl font-bold hover:bg-gray-200 rounded-full w-10 h-10 flex items-center justify-center transition"
+            aria-label="Close scorecard"
           >
             ×
           </button>
