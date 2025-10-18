@@ -3,73 +3,97 @@
   <!-- Homepage -->
   <url>
     <loc>https://theppsuchronicles.com/</loc>
+    <lastmod>2025-10-18</lastmod>
+    <changefreq>daily</changefreq>
     <priority>1.00</priority>
+  </url>
+
+  <!-- Live Scores -->
+  <url>
+    <loc>https://theppsuchronicles.com/live</loc>
+    <lastmod>2025-10-18</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.90</priority>
   </url>
 
   <!-- Stories -->
   <url>
     <loc>https://theppsuchronicles.com/stories</loc>
+    <lastmod>2025-10-18</lastmod>
+    <changefreq>daily</changefreq>
     <priority>0.85</priority>
   </url>
 
-  <!-- Media -->
+  <!-- Campus News -->
   <url>
-    <loc>https://theppsuchronicles.com/media</loc>
-    <priority>0.80</priority>
+    <loc>https://theppsuchronicles.com/campus-news</loc>
+    <lastmod>2025-10-18</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.85</priority>
   </url>
 
   <!-- Events -->
   <url>
     <loc>https://theppsuchronicles.com/events</loc>
+    <lastmod>2025-10-18</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.85</priority>
+  </url>
+
+  <!-- Media Gallery -->
+  <url>
+    <loc>https://theppsuchronicles.com/media</loc>
+    <lastmod>2025-10-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.80</priority>
   </url>
 
   <!-- Student Voice -->
   <url>
     <loc>https://theppsuchronicles.com/student-voice</loc>
+    <lastmod>2025-10-18</lastmod>
+    <changefreq>weekly</changefreq>
     <priority>0.80</priority>
   </url>
 
-  <!-- Student Spotlights -->
+  <!-- Clubs Directory -->
   <url>
-    <loc>https://theppsuchronicles.com/student-spotlights</loc>
-    <priority>0.80</priority>
+    <loc>https://theppsuchronicles.com/clubs</loc>
+    <lastmod>2025-10-18</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.75</priority>
   </url>
 
   <!-- Contact -->
   <url>
     <loc>https://theppsuchronicles.com/contact</loc>
+    <lastmod>2025-10-18</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.70</priority>
   </url>
 
   <!-- Login -->
   <url>
     <loc>https://theppsuchronicles.com/login</loc>
-    <priority>0.60</priority>
+    <lastmod>2025-10-18</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.40</priority>
   </url>
 
   <!-- Privacy Policy -->
   <url>
     <loc>https://theppsuchronicles.com/privacy-policy</loc>
-    <priority>0.50</priority>
+    <lastmod>2025-10-18</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.30</priority>
   </url>
 
   <!-- Terms of Service -->
   <url>
     <loc>https://theppsuchronicles.com/terms-of-service</loc>
-    <priority>0.50</priority>
-  </url>
-
-  <!-- Clubs -->
-  <url>
-    <loc>https://theppsuchronicles.com/clubs</loc>
-    <priority>0.60</priority>
-  </url>
-
-  <!-- Admin Dashboard -->
-  <url>
-    <loc>https://theppsuchronicles.com/admin</loc>
-    <priority>0.40</priority>
+    <lastmod>2025-10-18</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.30</priority>
   </url>
 </urlset>
 
