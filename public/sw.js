@@ -37,7 +37,24 @@ self.addEventListener("activate", (event) => {
 });
 
 // Fetch event - serve from cache, fallback to network
+// Skip caching for video streams and API calls
 self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+  
+  // Don't cache video files, camera streams, or Firebase
+  if (
+    url.pathname.endsWith('.mp4') ||
+    url.pathname.endsWith('.webm') ||
+    url.pathname.includes('firebasestorage') ||
+    url.pathname.includes('/_next/') ||
+    event.request.method !== 'GET'
+  ) {
+    // Just fetch, don't cache
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // For everything else, try cache first, then network
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);

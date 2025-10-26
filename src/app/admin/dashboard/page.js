@@ -114,6 +114,7 @@ export default function SuperAdminDashboard() {
     campus_events: { name: 'Campus Events', collectionName: 'events', fields: ['title', 'date', 'time', 'location', 'description', 'category'] },
     upcoming_events: { name: 'Upcoming Events', collectionName: 'upcomingEvents', fields: ['title', 'date', 'time', 'location', 'description', 'category', 'registerLink'] },
     student_voice: { name: 'Student Voice Submissions', collectionName: 'submissions', fields: [] },
+    predictions: { name: '⚽ Match Predictions', collectionName: null, fields: [], isExternal: true, path: '/admin/predictions' },
     live_scream: { name: 'Live Scream', collectionName: null, fields: [], isExternal: true, path: '/live/admin' },
     live_streams: { name: 'Live Streams', collectionName: 'live_streams', fields: ['title', 'description', 'streamKey', 'status'] },
     contact_messages: { name: 'Contact Messages', collectionName: 'contactmessages', fields: [] },

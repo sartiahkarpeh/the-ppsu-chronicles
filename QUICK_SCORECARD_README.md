@@ -3,9 +3,11 @@
 ## 🆕 New Features Added
 
 ### 1. **Quick Scorecard Interface**
+
 A modern, real-time scorecard for quick score updates without needing to edit and save manually.
 
 #### Features:
+
 - **Sport-specific design**: Green theme for Football ⚽, Orange theme for Basketball 🏀
 - **Team logos and names** displayed prominently
 - **Large score display** with easy-to-read numbers
@@ -23,15 +25,18 @@ A modern, real-time scorecard for quick score updates without needing to edit an
   - Football: Switch between 1st and 2nd half
 
 ### 2. **Live Timer on Public Page**
+
 The live timer now displays and counts in real-time on the public `/live` page for all LIVE matches.
 
 #### How it works:
+
 - **Football matches**: Time counts up from the last saved time (e.g., 45', 46', 47'...)
 - **Basketball matches**: Time counts down from the last saved time (e.g., 12:00, 11:59, 11:58...)
 - **Updates automatically** every second on the viewer's screen
 - **Syncs with admin updates** when admin saves new times via scorecard
 
 ### 3. **Scorecard Button on Admin Panel**
+
 For any match with status "LIVE", a "📊 Scorecard" button appears on the card.
 
 ## 🎯 Usage Guide
@@ -52,7 +57,7 @@ For any match with status "LIVE", a "📊 Scorecard" button appears on the card.
 2. **Click "📊 Scorecard"** button on the match card
 3. **Set the quarter** (Q1, Q2, Q3, Q4)
 4. **Start the timer** to begin countdown (default 12:00)
-5. **Add points**: 
+5. **Add points**:
    - Free throw: +1
    - Field goal: +2
    - Three-pointer: +3
@@ -83,6 +88,7 @@ For any match with status "LIVE", a "📊 Scorecard" button appears on the card.
 ## 🎨 Design Details
 
 ### Football Scorecard
+
 - **Color theme**: Green accents (#10B981)
 - **Timer format**: Minutes and seconds (45'23)
 - **Score buttons**: +1 Goal (large green), -1 (red)
@@ -90,6 +96,7 @@ For any match with status "LIVE", a "📊 Scorecard" button appears on the card.
 - **Timer behavior**: Counts UP from 0 to 90+ minutes
 
 ### Basketball Scorecard
+
 - **Color theme**: Orange accents (#F97316)
 - **Timer format**: MM:SS (12:00, 5:45, etc.)
 - **Score buttons**: +1, +2, +3 (orange), -1 (red)
@@ -99,6 +106,7 @@ For any match with status "LIVE", a "📊 Scorecard" button appears on the card.
 ## 🔥 Technical Implementation
 
 ### Auto-Save Mechanism
+
 ```typescript
 // Auto-saves every 5 seconds when timer is running
 useEffect(() => {
@@ -110,6 +118,7 @@ useEffect(() => {
 ```
 
 ### Live Timer on Public Page
+
 ```typescript
 // Updates every second for LIVE matches
 useEffect(() => {
@@ -125,11 +134,12 @@ useEffect(() => {
 ```
 
 ### Firebase Updates
+
 ```typescript
 await updateDoc(doc(db, "liveGames", gameId), {
   score: "85 - 92",
   time: "Q3 5:45",
-  lastUpdated: serverTimestamp()
+  lastUpdated: serverTimestamp(),
 });
 ```
 
@@ -146,6 +156,7 @@ await updateDoc(doc(db, "liveGames", gameId), {
 ## 🎮 User Experience
 
 ### Admin Experience
+
 - Click scorecard button → Immediate full-screen interface
 - Large, touch-friendly buttons for mobile use
 - Clear visual feedback for all actions
@@ -154,6 +165,7 @@ await updateDoc(doc(db, "liveGames", gameId), {
 - Close anytime - changes are saved
 
 ### Public Viewer Experience
+
 - See live timer counting in real-time
 - Score updates appear instantly
 - Visual "LIVE" indicator with pulse animation
@@ -170,6 +182,7 @@ await updateDoc(doc(db, "liveGames", gameId), {
 ## 🔜 Future Enhancements
 
 Potential additions:
+
 - [ ] Foul/penalty tracking
 - [ ] Player substitution tracking
 - [ ] Shot clock for basketball
@@ -194,16 +207,19 @@ Potential additions:
 ## 🐛 Troubleshooting
 
 **Timer not counting?**
+
 - Make sure you clicked "Start" button
 - Check match status is "LIVE"
 - Refresh page if timer seems stuck
 
 **Scores not updating on public page?**
+
 - Wait for auto-save (5 seconds)
 - Click "Save Now" button manually
 - Check internet connection
 
 **Scorecard button not showing?**
+
 - Match status must be "LIVE"
 - Only appears on admin panel
 - Not visible on public page

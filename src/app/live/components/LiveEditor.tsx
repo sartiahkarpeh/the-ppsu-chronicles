@@ -152,13 +152,13 @@ export default function LiveEditor({
           description: formData.description,
           lastUpdated: serverTimestamp(),
         };
-        
+
         // Set startTime if changing to LIVE status
         if (formData.status === "LIVE" && game.status !== "LIVE") {
           updateData.startTime = serverTimestamp();
           updateData.pausedAt = 0;
         }
-        
+
         await updateDoc(gameRef, updateData);
       } else {
         // Create new game
@@ -174,13 +174,13 @@ export default function LiveEditor({
           description: formData.description,
           lastUpdated: serverTimestamp(),
         };
-        
+
         // Set startTime if creating a LIVE match
         if (formData.status === "LIVE") {
           newGameData.startTime = serverTimestamp();
           newGameData.pausedAt = 0;
         }
-        
+
         const docRef = await addDoc(collection(db, "liveGames"), newGameData);
 
         // Upload images with the new document ID

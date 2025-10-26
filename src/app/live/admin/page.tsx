@@ -6,6 +6,7 @@ import { useLiveUpdates } from "@/app/live/hooks/useLiveUpdates";
 import LiveCard from "@/app/live/components/LiveCard";
 import LiveEditor from "@/app/live/components/LiveEditor";
 import QuickScorecard from "@/app/live/components/QuickScorecard";
+import AdminLiveStream from "@/app/live/components/AdminLiveStream";
 import { Sport, LiveGame } from "@/app/live/types";
 import { doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/firebase/config";
@@ -115,6 +116,14 @@ export default function LiveAdminPage() {
             <span className="text-2xl">🏀</span>
             <span>➕ Add Basketball Live</span>
           </button>
+        </div>
+
+        {/* Live Streaming Section */}
+        <div className="mb-12">
+          <AdminLiveStream 
+            onStreamStart={(streamId) => showToast(`Stream started: ${streamId}`, "success")}
+            onStreamEnd={() => showToast("Stream ended successfully", "success")}
+          />
         </div>
 
         {/* Loading State */}

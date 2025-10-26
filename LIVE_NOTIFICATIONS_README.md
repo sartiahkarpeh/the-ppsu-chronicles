@@ -1,11 +1,13 @@
 # 🔔 Live Scores - Push Notifications & iOS Dynamic Island
 
 ## Overview
+
 The Live Scores system now includes real-time push notifications and experimental iOS Dynamic Island support to keep users engaged with live match updates.
 
 ## Features
 
 ### 🌐 Web Push Notifications
+
 - **Permission Request**: Users are prompted to enable notifications when they first visit `/live`
 - **Real-time Updates**: Automatic notifications when:
   - Match starts (UPCOMING → LIVE)
@@ -15,18 +17,21 @@ The Live Scores system now includes real-time push notifications and experimenta
 - **Persistent Storage**: User preferences saved in localStorage
 
 ### 📱 iOS Dynamic Island (Experimental)
+
 - **Live Activities**: Shows live match updates in Dynamic Island on supported devices
 - **App Badge**: Displays number of active live matches
 - **Device Detection**: Automatically detects iOS devices
 - **Fallback Support**: Uses standard notifications on non-iOS devices
 
 ### 🎯 Service Worker Integration
+
 - **Background Sync**: Keeps scores updated even when app is in background
 - **Offline Support**: Caches essential resources for offline viewing
 - **Click Actions**: Tap notifications to navigate directly to `/live` page
 - **Custom Actions**: "View Match" or "Close" buttons on notifications
 
 ### 🎨 User Experience
+
 - **Animated Banner**: Smooth slide-up animation for permission request
 - **iOS-Specific Messaging**: Tailored content for iPhone users about Dynamic Island
 - **Dismissible**: Users can close banner and preference is remembered
@@ -37,7 +42,9 @@ The Live Scores system now includes real-time push notifications and experimenta
 ### Files Created
 
 #### Hooks
+
 - **`/src/app/live/hooks/useNotifications.ts`**
+
   - Web Notifications API wrapper
   - Functions: `requestPermission()`, `notifyScoreUpdate()`, `notifyGameStart()`, `notifyGameEnd()`
   - Manages notification state and permissions
@@ -48,13 +55,16 @@ The Live Scores system now includes real-time push notifications and experimenta
   - Device detection for iOS-specific features
 
 #### Components
+
 - **`/src/app/live/components/NotificationBanner.tsx`**
   - Modal banner requesting notification permissions
   - iOS Dynamic Island promotional content
   - Animated entry/exit with backdrop
 
 #### Infrastructure
+
 - **`/public/sw.js`**
+
   - Service Worker for push notifications
   - Background sync for offline updates
   - Notification click handlers
@@ -67,6 +77,7 @@ The Live Scores system now includes real-time push notifications and experimenta
   - Standalone display mode
 
 #### Layout Updates
+
 - **`/src/app/layout.tsx`**
   - Service Worker registration script
   - iOS meta tags for PWA support
@@ -77,6 +88,7 @@ The Live Scores system now includes real-time push notifications and experimenta
 ### For Users
 
 1. **Enable Notifications**
+
    - Visit `/live` page
    - Click "Enable Notifications" on the banner
    - Allow notifications when browser prompts
@@ -92,11 +104,13 @@ The Live Scores system now includes real-time push notifications and experimenta
 ### For Admins
 
 1. **Start Match**
+
    - Go to `/live/admin`
    - Create new match and set status to LIVE
    - Users receive "Match Started" notification
 
 2. **Update Scores**
+
    - Use Quick Scorecard or Edit button
    - Every score change triggers notification to all users
    - Updates appear in iOS Dynamic Island
@@ -108,12 +122,14 @@ The Live Scores system now includes real-time push notifications and experimenta
 ## Browser Support
 
 ### Desktop
+
 - ✅ Chrome/Edge: Full support
 - ✅ Firefox: Full support
 - ✅ Safari: Notifications supported (macOS 13+)
 - ❌ Opera: Notifications supported
 
 ### Mobile
+
 - ✅ Chrome Android: Full support
 - ✅ Safari iOS: Notifications supported (iOS 16.4+)
 - ⚠️ iOS Dynamic Island: Experimental (limited web support)
@@ -122,17 +138,20 @@ The Live Scores system now includes real-time push notifications and experimenta
 ## Limitations
 
 ### iOS Dynamic Island
+
 - **Web Limitations**: Live Activities API is primarily for native iOS apps
 - **Experimental**: Web implementation may not work on all iOS versions
 - **Fallback**: Standard notifications work as alternative
 - **PWA Required**: Add to Home Screen for best iOS experience
 
 ### Notification Permissions
+
 - **HTTPS Required**: Production must use HTTPS
 - **User Consent**: Cannot send notifications without permission
 - **Browser Block**: Users can permanently block notifications
 
 ### Service Worker
+
 - **Development**: May need manual refresh to update service worker
 - **Cache**: Clear cache if experiencing issues
 - **localhost**: Some features limited in local development
@@ -140,6 +159,7 @@ The Live Scores system now includes real-time push notifications and experimenta
 ## Testing
 
 ### Local Testing
+
 ```powershell
 # Start development server
 npm run dev
@@ -151,6 +171,7 @@ npm run dev
 ```
 
 ### Production Testing
+
 ```powershell
 # Build and start
 npm run build
@@ -164,18 +185,21 @@ npm start
 ## Troubleshooting
 
 ### Notifications Not Showing
+
 1. Check browser notification permissions in settings
 2. Ensure HTTPS is enabled (production)
 3. Verify service worker is registered (DevTools → Application)
 4. Clear cache and re-request permission
 
 ### iOS Dynamic Island Not Working
+
 1. Confirm device supports Dynamic Island (iPhone 14 Pro+)
 2. Add app to Home Screen
 3. Grant notification permissions
 4. Note: Web support is experimental
 
 ### Service Worker Issues
+
 1. Clear all site data
 2. Unregister service worker in DevTools
 3. Hard refresh (Ctrl+Shift+R / Cmd+Shift+R)

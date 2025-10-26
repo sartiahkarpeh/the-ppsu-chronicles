@@ -32,3 +32,29 @@ export interface LiveEditorProps {
   sport: Sport;
   game?: LiveGame | null;
 }
+
+// New types for live streaming
+export interface LiveStream {
+  id: string;
+  isActive: boolean;
+  streamKey?: string;
+  playbackId?: string;
+  playbackUrl?: string;
+  matchId?: string; // Associated match for overlays
+  startedAt?: Timestamp | Date;
+  endedAt?: Timestamp | Date;
+  viewerCount?: number;
+  currentFrame?: string; // Data URL of current camera frame
+  lastFrameUpdate?: Timestamp | Date; // When frame was last updated
+}
+
+export interface StreamOverlayData {
+  teamA: string;
+  teamB: string;
+  teamALogo: string;
+  teamBLogo: string;
+  score: string;
+  time: string;
+  league: string;
+  status: MatchStatus;
+}

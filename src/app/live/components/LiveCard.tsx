@@ -133,6 +133,7 @@ export default function LiveCard({
                 src={game.teamA.imageUrl}
                 alt={game.teamA.name}
                 fill
+                sizes="80px"
                 className="object-contain"
                 onError={() => setImageErrors((prev) => ({ ...prev, teamA: true }))}
               />
@@ -165,6 +166,7 @@ export default function LiveCard({
                 src={game.teamB.imageUrl}
                 alt={game.teamB.name}
                 fill
+                sizes="80px"
                 className="object-contain"
                 onError={() => setImageErrors((prev) => ({ ...prev, teamB: true }))}
               />

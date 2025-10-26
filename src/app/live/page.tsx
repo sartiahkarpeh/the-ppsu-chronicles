@@ -4,14 +4,40 @@
 import { useLiveUpdates } from "@/app/live/hooks/useLiveUpdates";
 import LiveCard from "@/app/live/components/LiveCard";
 import { LiveBanner } from "@/app/live/components/LiveBadge";
+import LiveVideoPlayer from "@/app/live/components/LiveVideoPlayer";
+import { useState, useEffect } from "react";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/firebase/config";
 
 export default function LivePage() {
   const { games, loading, error } = useLiveUpdates();
+  const [hasActiveStream, setHasActiveStream] = useState(false);
 
   const footballGames = games.filter((game) => game.sport === "Football");
   const basketballGames = games.filter((game) => game.sport === "Basketball");
   const liveGamesCount = games.filter((game) => game.status === "LIVE").length;
   const hasLiveGames = liveGamesCount > 0;
+
+  // Check for active stream with REAL-TIME updates
+  useEffect(() => {
+    const streamQuery = query(
+      collection(db, "livestreams"),
+      where("isActive", "==", true)
+    );
+    
+    // Real-time listener for instant updates
+    const unsubscribe = onSnapshot(
+      streamQuery,
+      (snapshot) => {
+        setHasActiveStream(!snapshot.empty);
+      },
+      (error) => {
+        console.error("Error checking stream:", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   if (loading) {
     return (
@@ -58,6 +84,17 @@ export default function LivePage() {
               Real-time updates from ongoing matches
             </p>
           </div>
+
+          {/* Live Video Stream Section */}
+          {hasActiveStream && (
+            <div className="mb-12">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-1 h-8 bg-red-500 rounded-full"></div>
+                <h2 className="text-3xl font-bold text-gray-800">📹 Live Video Stream</h2>
+              </div>
+              <LiveVideoPlayer showControls={true} />
+            </div>
+          )}
 
         {/* No Games Message */}
         {games.length === 0 && (
