@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated admin or editor
+    function isAdmin() {
+      return request.auth != null && 
+             request.auth.token.role != null &&
+             request.auth.token.role in ['admin', 'editor'];
+    }
+
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // ============= AFCON 25 FIXTURES =============
+    
+    // Fixtures collection - Public read, admin write
+    match /fixtures/{fixtureId} {
+      allow read: if true;
+      allow create, update, delete: if true; // For development - tighten in production
+      
+      // Events subcollection (goals, cards, etc.)
+      match /events/{eventId} {
+        allow read: if true;
+        allow write: if true; // For development
+      }
+    }
+
+    // Fixture notification subscriptions - Users can manage their own
+    match /fixtureNotificationSubscriptions/{subscriptionId} {
+      allow read: if true;
+      allow create: if request.resource.data.userIdentifier is string
+                    && request.resource.data.fixtureId is string
+                    && request.resource.data.channel in ['push', 'inApp'];
+      allow delete: if true; // For development - should check userIdentifier
+    }
+
+    // ============= LEGACY AFCON COLLECTIONS =============
+
+    // AFCON Teams - Public read, admin write
+    match /afcon_teams/{teamId} {
+      allow read: if true;
+      allow write: if true; // For development
+    }
+
+    // AFCON Players - Public read, admin write
+    match /afcon_players/{playerId} {
+      allow read: if true;
+      allow write: if true; // For development
+    }
+
+    // AFCON Matches (legacy) - Public read, admin write
+    match /afcon_fixtures/{matchId} {
+      allow read: if true;
+      allow write: if true; // For development
+      
+      // Match events subcollection
+      match /events/{eventId} {
+        allow read: if true;
+        allow write: if true; // For development
+      }
+    }
+
+    // AFCON Standings - Public read, computed by Cloud Function
+    match /afcon_standings/{groupId} {
+      allow read: if true;
+      allow write: if true; // For development
+    }
+
+    // AFCON Highlights - Public read, admin write
+    match /afcon_highlights/{highlightId} {
+      allow read: if true;
+      allow write: if true; // For development
+    }
+
+    // Predictions collection
+    match /predictions/{predictionId} {
+      allow read: if true;
+      allow create: if request.resource.data.name is string
+                    && request.resource.data.enrollmentNumber is string
+                    && request.resource.data.prediction is map;
+      allow update, delete: if false;
+    }
+
+    // Admin logs - Admin only
+    match /afcon_admin_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only Cloud Functions can write
+    }
+
+    // Default deny all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

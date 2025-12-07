@@ -114,9 +114,11 @@ export default function SuperAdminDashboard() {
     campus_events: { name: 'Campus Events', collectionName: 'events', fields: ['title', 'date', 'time', 'location', 'description', 'category'] },
     upcoming_events: { name: 'Upcoming Events', collectionName: 'upcomingEvents', fields: ['title', 'date', 'time', 'location', 'description', 'category', 'registerLink'] },
     student_voice: { name: 'Student Voice Submissions', collectionName: 'submissions', fields: [] },
+    live_streams: { name: 'Live Streams', collectionName: 'live_streams', fields: ['title', 'description', 'streamKey', 'status'] },
     predictions: { name: '⚽ Match Predictions', collectionName: null, fields: [], isExternal: true, path: '/admin/predictions' },
     live_scream: { name: 'Live Scream', collectionName: null, fields: [], isExternal: true, path: '/live/admin' },
-    live_streams: { name: 'Live Streams', collectionName: 'live_streams', fields: ['title', 'description', 'streamKey', 'status'] },
+    afcon25: { name: 'AFCON 2025', collectionName: null, fields: [], isExternal: true, path: '/admin/afcon25' },
+
     contact_messages: { name: 'Contact Messages', collectionName: 'contactmessages', fields: [] },
   }), []);
 
@@ -457,9 +459,9 @@ export default function SuperAdminDashboard() {
             const type = contentTypes[key];
             if (type.isExternal) {
               return (
-                <button 
-                  key={key} 
-                  onClick={() => router.push(type.path)} 
+                <button
+                  key={key}
+                  onClick={() => router.push(type.path)}
                   className="w-full text-left px-4 py-2 rounded-md transition-colors hover:bg-gray-700"
                 >
                   {type.name}
@@ -467,9 +469,9 @@ export default function SuperAdminDashboard() {
               );
             }
             return (
-              <button 
-                key={key} 
-                onClick={() => setCurrentView(key)} 
+              <button
+                key={key}
+                onClick={() => setCurrentView(key)}
                 className={`w-full text-left px-4 py-2 rounded-md transition-colors ${currentView === key ? 'bg-blue-600' : 'hover:bg-gray-700'}`}
               >
                 {type.name}
@@ -495,9 +497,9 @@ export default function SuperAdminDashboard() {
             const type = contentTypes[key];
             if (type.isExternal) {
               return (
-                <button 
-                  key={key} 
-                  onClick={() => { router.push(type.path); setIsSidebarOpen(false); }} 
+                <button
+                  key={key}
+                  onClick={() => { router.push(type.path); setIsSidebarOpen(false); }}
                   className="w-full text-left px-4 py-2 rounded-md transition-colors hover:bg-gray-700"
                 >
                   {type.name}
@@ -505,9 +507,9 @@ export default function SuperAdminDashboard() {
               );
             }
             return (
-              <button 
-                key={key} 
-                onClick={() => { setCurrentView(key); setIsSidebarOpen(false); }} 
+              <button
+                key={key}
+                onClick={() => { setCurrentView(key); setIsSidebarOpen(false); }}
                 className={`w-full text-left px-4 py-2 rounded-md transition-colors ${currentView === key ? 'bg-blue-600' : 'hover:bg-gray-700'}`}
               >
                 {type.name}
@@ -528,26 +530,13 @@ export default function SuperAdminDashboard() {
     <div>
       <h2 className="text-3xl font-bold mb-6">Dashboard</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {Object.keys(contentTypes).filter(k => k !== 'dashboard').map(key => {
-          const type = contentTypes[key];
-          if (type.isExternal) {
-            return (
-              <button key={key} onClick={() => router.push(type.path)} className="text-left bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
-                <h3 className="text-xl font-semibold text-gray-700">{type.name}</h3>
-                <p className="text-sm text-gray-500 mt-2">⚽🏀 Manage live scores</p>
-                <span className="inline-block mt-3 text-sm text-blue-600">Manage →</span>
-              </button>
-            );
-          }
-          if (!type.collectionName) return null;
-          return (
-            <button key={key} onClick={() => setCurrentView(key)} className="text-left bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
-              <h3 className="text-xl font-semibold text-gray-700">{type.name}</h3>
-              <p className="text-3xl font-bold mt-2">{counts[key] ?? 0}</p>
-              <span className="inline-block mt-3 text-sm text-blue-600">Manage →</span>
-            </button>
-          );
-        })}
+        {Object.keys(contentTypes).filter(k => k !== 'dashboard' && contentTypes[k].collectionName).map(key => (
+          <button key={key} onClick={() => setCurrentView(key)} className="text-left bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
+            <h3 className="text-xl font-semibold text-gray-700">{contentTypes[key].name}</h3>
+            <p className="text-3xl font-bold mt-2">{counts[key] ?? 0}</p>
+            <span className="inline-block mt-3 text-sm text-blue-600">Manage →</span>
+          </button>
+        ))}
       </div>
 
       <h3 className="text-2xl font-bold mb-4">Activity Log</h3>

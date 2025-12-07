@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Homepage -->
+  <url>
+    <loc>https://theppsuchronicles.com/</loc>
+    <priority>1.00</priority>
+  </url>
+
+  <!-- Stories -->
+  <url>
+    <loc>https://theppsuchronicles.com/stories</loc>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Media -->
+  <url>
+    <loc>https://theppsuchronicles.com/media</loc>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- Events -->
+  <url>
+    <loc>https://theppsuchronicles.com/events</loc>
+    <priority>0.85</priority>
+  </url>
+
+  <!-- Student Voice -->
+  <url>
+    <loc>https://theppsuchronicles.com/student-voice</loc>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- Student Spotlights -->
+  <url>
+    <loc>https://theppsuchronicles.com/student-spotlights</loc>
+    <priority>0.80</priority>
+  </url>
+
+  <!-- Contact -->
+  <url>
+    <loc>https://theppsuchronicles.com/contact</loc>
+    <priority>0.70</priority>
+  </url>
+
+  <!-- Login -->
+  <url>
+    <loc>https://theppsuchronicles.com/login</loc>
+    <priority>0.60</priority>
+  </url>
+
+  <!-- Privacy Policy -->
+  <url>
+    <loc>https://theppsuchronicles.com/privacy-policy</loc>
+    <priority>0.50</priority>
+  </url>
+
+  <!-- Terms of Service -->
+  <url>
+    <loc>https://theppsuchronicles.com/terms-of-service</loc>
+    <priority>0.50</priority>
+  </url>
+
+  <!-- Clubs -->
+  <url>
+    <loc>https://theppsuchronicles.com/clubs</loc>
+    <priority>0.60</priority>
+  </url>
+
+  <!-- Admin Dashboard -->
+  <url>
+    <loc>https://theppsuchronicles.com/admin</loc>
+    <priority>0.40</priority>
+  </url>
+</urlset>
+

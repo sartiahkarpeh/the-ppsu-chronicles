@@ -1,0 +1,88 @@
+[
+  {
+    "id": "m_001",
+    "homeTeamId": "t_senegal",
+    "awayTeamId": "t_egypt",
+    "kickoffUTC": "2025-01-15T18:00:00Z",
+    "venue": "National Stadium, Abidjan",
+    "stage": "Group A",
+    "status": "scheduled",
+    "homeScore": 0,
+    "awayScore": 0,
+    "minute": 0,
+    "autoImport": true,
+    "createdBy": "seed_script"
+  },
+  {
+    "id": "m_002",
+    "homeTeamId": "t_nigeria",
+    "awayTeamId": "t_cameroon",
+    "kickoffUTC": "2025-01-15T21:00:00Z",
+    "venue": "Félix Houphouët-Boigny Stadium",
+    "stage": "Group A",
+    "status": "scheduled",
+    "homeScore": 0,
+    "awayScore": 0,
+    "minute": 0,
+    "autoImport": true,
+    "createdBy": "seed_script"
+  },
+  {
+    "id": "m_003",
+    "homeTeamId": "t_ghana",
+    "awayTeamId": "t_morocco",
+    "kickoffUTC": "2025-01-16T18:00:00Z",
+    "venue": "Stade de la Paix, Bouaké",
+    "stage": "Group B",
+    "status": "scheduled",
+    "homeScore": 0,
+    "awayScore": 0,
+    "minute": 0,
+    "autoImport": true,
+    "createdBy": "seed_script"
+  },
+  {
+    "id": "m_004",
+    "homeTeamId": "t_algeria",
+    "awayTeamId": "t_ivorycoast",
+    "kickoffUTC": "2025-01-16T21:00:00Z",
+    "venue": "National Stadium, Abidjan",
+    "stage": "Group B",
+    "status": "scheduled",
+    "homeScore": 0,
+    "awayScore": 0,
+    "minute": 0,
+    "autoImport": true,
+    "createdBy": "seed_script"
+  },
+  {
+    "id": "m_demo_live",
+    "homeTeamId": "t_senegal",
+    "awayTeamId": "t_nigeria",
+    "kickoffUTC": "2025-01-10T18:00:00Z",
+    "venue": "Demo Stadium",
+    "stage": "Group A",
+    "status": "live",
+    "homeScore": 2,
+    "awayScore": 1,
+    "minute": 67,
+    "youtubeLiveId": "dQw4w9WgXcQ",
+    "autoImport": false,
+    "createdBy": "seed_script"
+  },
+  {
+    "id": "m_demo_finished",
+    "homeTeamId": "t_morocco",
+    "awayTeamId": "t_ghana",
+    "kickoffUTC": "2025-01-08T18:00:00Z",
+    "venue": "Demo Stadium",
+    "stage": "Group B",
+    "status": "finished",
+    "homeScore": 3,
+    "awayScore": 2,
+    "minute": 90,
+    "autoImport": false,
+    "createdBy": "seed_script"
+  }
+]
+

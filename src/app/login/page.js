@@ -70,7 +70,7 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-            
+
             {error && <p className="text-red-500 text-sm">{error}</p>}
 
             <div>
@@ -87,4 +87,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

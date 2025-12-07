@@ -1,0 +1,75 @@
+[
+  {
+    "id": "t_senegal",
+    "name": "Senegal",
+    "country": "Senegal",
+    "crest_url": "https://upload.wikimedia.org/wikipedia/commons/f/fd/Flag_of_Senegal.svg",
+    "primary_color": "#009933",
+    "secondary_color": "#FCD116",
+    "fifa_code": "SEN"
+  },
+  {
+    "id": "t_egypt",
+    "name": "Egypt",
+    "country": "Egypt",
+    "crest_url": "https://upload.wikimedia.org/wikipedia/commons/f/fe/Flag_of_Egypt.svg",
+    "primary_color": "#CE1126",
+    "secondary_color": "#FFFFFF",
+    "fifa_code": "EGY"
+  },
+  {
+    "id": "t_nigeria",
+    "name": "Nigeria",
+    "country": "Nigeria",
+    "crest_url": "https://upload.wikimedia.org/wikipedia/commons/7/79/Flag_of_Nigeria.svg",
+    "primary_color": "#008751",
+    "secondary_color": "#FFFFFF",
+    "fifa_code": "NGA"
+  },
+  {
+    "id": "t_cameroon",
+    "name": "Cameroon",
+    "country": "Cameroon",
+    "crest_url": "https://upload.wikimedia.org/wikipedia/commons/4/4f/Flag_of_Cameroon.svg",
+    "primary_color": "#007A3D",
+    "secondary_color": "#CE1126",
+    "fifa_code": "CMR"
+  },
+  {
+    "id": "t_ghana",
+    "name": "Ghana",
+    "country": "Ghana",
+    "crest_url": "https://upload.wikimedia.org/wikipedia/commons/1/19/Flag_of_Ghana.svg",
+    "primary_color": "#CE1126",
+    "secondary_color": "#FCD116",
+    "fifa_code": "GHA"
+  },
+  {
+    "id": "t_morocco",
+    "name": "Morocco",
+    "country": "Morocco",
+    "crest_url": "https://upload.wikimedia.org/wikipedia/commons/2/2c/Flag_of_Morocco.svg",
+    "primary_color": "#C1272D",
+    "secondary_color": "#006233",
+    "fifa_code": "MAR"
+  },
+  {
+    "id": "t_algeria",
+    "name": "Algeria",
+    "country": "Algeria",
+    "crest_url": "https://upload.wikimedia.org/wikipedia/commons/7/77/Flag_of_Algeria.svg",
+    "primary_color": "#006233",
+    "secondary_color": "#D21034",
+    "fifa_code": "ALG"
+  },
+  {
+    "id": "t_ivorycoast",
+    "name": "Ivory Coast",
+    "country": "Côte d'Ivoire",
+    "crest_url": "https://upload.wikimedia.org/wikipedia/commons/f/fe/Flag_of_C%C3%B4te_d%27Ivoire.svg",
+    "primary_color": "#F77F00",
+    "secondary_color": "#009E60",
+    "fifa_code": "CIV"
+  }
+]
+
