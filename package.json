@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "cross-env HOST=0.0.0.0 PORT=3001 next dev",
     "start": "cross-env HOST=0.0.0.0 PORT=3001 next start",
-    "build": "next build"
+    "build": "node scripts/generate-sw.js && next build"
   },
   "dependencies": {
     "@tailwindcss/aspect-ratio": "^0.4.2",
@@ -32,6 +32,7 @@
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.21",
     "cross-env": "^10.0.0",
+    "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
     "postcss": "^8.5.6",
