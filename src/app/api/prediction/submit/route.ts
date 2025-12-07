@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/config';
-import { collection, addDoc, query, where, getDocs, serverTimestamp } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebaseAdmin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,20 +27,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user or device has already submitted (server-side double-check)
-    const predictionsRef = collection(db, 'predictions');
-    const q = query(
-      predictionsRef,
-      where('matchId', '==', matchId)
-    );
+    const db = getAdminDb();
+    const predictionsRef = db.collection('predictions');
 
-    const querySnapshot = await getDocs(q);
+    // Check if user or device has already submitted (server-side double-check)
+    const snapshot = await predictionsRef
+      .where('matchId', '==', matchId)
+      .get();
 
     // Check for existing prediction by enrollment number OR device ID
-    const existingPrediction = querySnapshot.docs.find(doc => {
+    const existingPrediction = snapshot.docs.find(doc => {
       const data = doc.data();
-      return data.enrollmentNumber === enrollmentNumber.toUpperCase() || 
-             data.deviceId === deviceId;
+      return data.enrollmentNumber === enrollmentNumber.toUpperCase() ||
+        data.deviceId === deviceId;
     });
 
     if (existingPrediction) {
@@ -69,11 +68,11 @@ export async function POST(request: NextRequest) {
         awayScore: parseInt(awayScore),
         winner,
       },
-      timestamp: serverTimestamp(),
+      timestamp: FieldValue.serverTimestamp(),
       createdAt: new Date().toISOString(),
     };
 
-    const docRef = await addDoc(predictionsRef, predictionData);
+    const docRef = await predictionsRef.add(predictionData);
 
     return NextResponse.json({
       success: true,

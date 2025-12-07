@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/firebase/config';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebaseAdmin';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,20 +12,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if prediction exists for this enrollment number OR device ID
-    const predictionsRef = collection(db, 'predictions');
-    const q = query(
-      predictionsRef,
-      where('matchId', '==', matchId)
-    );
+    const db = getAdminDb();
+    const predictionsRef = db.collection('predictions');
 
-    const querySnapshot = await getDocs(q);
+    // Check if prediction exists for this enrollment number OR device ID for this match
+    const snapshot = await predictionsRef
+      .where('matchId', '==', matchId)
+      .get();
 
     // Check if enrollment number or device ID already exists
-    const existingPrediction = querySnapshot.docs.find(doc => {
+    const existingPrediction = snapshot.docs.find(doc => {
       const data = doc.data();
-      return data.enrollmentNumber === enrollmentNumber.toUpperCase() || 
-             data.deviceId === deviceId;
+      return data.enrollmentNumber === enrollmentNumber.toUpperCase() ||
+        data.deviceId === deviceId;
     });
 
     if (existingPrediction) {
