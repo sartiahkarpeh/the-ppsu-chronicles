@@ -1,6 +1,5 @@
 import { MetadataRoute } from 'next';
-import { db } from '@/firebase/config';
-import { collection, getDocs } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebaseAdmin';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://theppsuchronicles.com';
@@ -77,12 +76,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   try {
-    // Fetch dynamic routes from Firebase
+    // Get Admin Firestore instance
+    const db = getAdminDb();
+
+    // Fetch dynamic routes from Firebase Admin SDK
     const [storiesSnapshot, campusNewsSnapshot, clubsSnapshot, spotlightsSnapshot] = await Promise.all([
-      getDocs(collection(db, 'stories')),
-      getDocs(collection(db, 'campusNews')),
-      getDocs(collection(db, 'clubs')),
-      getDocs(collection(db, 'studentSpotlights')),
+      db.collection('stories').get(),
+      db.collection('campusNews').get(),
+      db.collection('clubs').get(),
+      db.collection('studentSpotlights').get(),
     ]);
 
     // Stories routes
