@@ -6,10 +6,10 @@
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
 
-let adminApp: App;
-let adminDb: Firestore;
+let adminApp: App | null = null;
+let adminDb: Firestore | null = null;
 
-function getAdminApp(): App {
+function getAdminApp(): App | null {
     if (getApps().length === 0) {
         // Initialize with service account from environment variables
         const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -17,10 +17,10 @@ function getAdminApp(): App {
         const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
 
         if (!projectId || !clientEmail || !privateKey) {
-            // Fallback for local development if env vars are missing, but don't break build
-            // This allows the build to pass even if these aren't set, 
-            // though runtime will fail if they are needed and missing.
-            console.warn('Firebase Admin env vars missing. Attempting to use default credentials or mock.');
+            // Return null during build when credentials aren't available
+            // This allows static generation to use fallbacks instead of throwing
+            console.warn('Firebase Admin env vars missing. Build will use static fallbacks.');
+            return null;
         }
 
         const serviceAccount = {
@@ -39,9 +39,10 @@ function getAdminApp(): App {
     return adminApp;
 }
 
-export function getAdminDb(): Firestore {
+export function getAdminDb(): Firestore | null {
     if (!adminDb) {
-        getAdminApp();
+        const app = getAdminApp();
+        if (!app) return null;
         adminDb = getFirestore();
     }
     return adminDb;

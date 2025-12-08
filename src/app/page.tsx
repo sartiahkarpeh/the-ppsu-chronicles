@@ -2,8 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, Calendar, Mic, Camera, ArrowRight, Star } from 'lucide-react';
 import { CalendarDays, Clock, MapPin } from 'lucide-react';
-import { db } from '../firebase/config';
-import { collection, getDocs, query, where, orderBy, limit } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebaseAdmin';
 import BlogPostCard from '../components/BlogPostCard';
 // import EventCard from '../components/EventCard';
 import { format, isToday, isThisWeek, parseISO } from 'date-fns';
@@ -12,18 +11,17 @@ import Header from '../components/Header';
 
 export const revalidate = 60;
 
-// Fetch the latest 3 published stories from Firebase
+// Fetch the latest 3 published stories from Firebase using Admin SDK
 async function getFeaturedStories() {
-  const postsCollection = collection(db, 'posts');
-  const q = query(
-    postsCollection,
-    where('status', '==', 'published'),
-    orderBy('createdAt', 'desc'),
-    limit(3) // Only get the latest 3 stories
-  );
-
   try {
-    const storySnapshot = await getDocs(q);
+    const db = getAdminDb();
+    if (!db) return [];
+    const storySnapshot = await db.collection('posts')
+      .where('status', '==', 'published')
+      .orderBy('createdAt', 'desc')
+      .limit(3)
+      .get();
+
     const stories = storySnapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -47,18 +45,17 @@ async function getFeaturedStories() {
   }
 }
 
-// Fetch the latest 2 student spotlights from Firebase
+// Fetch the latest 2 student spotlights from Firebase using Admin SDK
 async function getFeaturedSpotlights() {
-  const spotlightsCollection = collection(db, 'spotlights');
-  const q = query(
-    spotlightsCollection,
-    where('status', '==', 'published'),
-    orderBy('createdAt', 'desc'),
-    limit(2) // Only get the latest 2 spotlights
-  );
-
   try {
-    const snapshot = await getDocs(q);
+    const db = getAdminDb();
+    if (!db) return [];
+    const snapshot = await db.collection('spotlights')
+      .where('status', '==', 'published')
+      .orderBy('createdAt', 'desc')
+      .limit(2)
+      .get();
+
     const spotlights = snapshot.docs.map(doc => {
       const data = doc.data();
       return {
@@ -80,18 +77,17 @@ async function getFeaturedSpotlights() {
   }
 }
 
-// Fetch the latest 3 upcoming events from Firebase
+// Fetch the latest 3 upcoming events from Firebase using Admin SDK
 async function getFeaturedUpcomingEvents() {
-  const upcomingEventsCollection = collection(db, 'upcomingEvents');
-  const q = query(
-    upcomingEventsCollection,
-    where('status', '==', 'published'),
-    orderBy('date', 'asc'), // Show upcoming events in chronological order
-    limit(3) // Only get the next 3 upcoming events
-  );
-
   try {
-    const snapshot = await getDocs(q);
+    const db = getAdminDb();
+    if (!db) return [];
+    const snapshot = await db.collection('upcomingEvents')
+      .where('status', '==', 'published')
+      .orderBy('date', 'asc')
+      .limit(3)
+      .get();
+
     const events = snapshot.docs.map(doc => {
       const data = doc.data();
       return {

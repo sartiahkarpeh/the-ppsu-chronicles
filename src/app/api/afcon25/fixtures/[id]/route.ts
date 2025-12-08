@@ -13,6 +13,12 @@ export async function GET(
 ) {
     try {
         const db = getAdminDb();
+        if (!db) {
+            return NextResponse.json(
+                { error: 'Database unavailable' },
+                { status: 503 }
+            );
+        }
         const { id } = await params;
 
         // First try to get by document ID
@@ -99,6 +105,12 @@ export async function PUT(
 ) {
     try {
         const db = getAdminDb();
+        if (!db) {
+            return NextResponse.json(
+                { error: 'Database unavailable' },
+                { status: 503 }
+            );
+        }
         const { id } = await params;
         const body = await request.json();
 
@@ -158,6 +170,12 @@ export async function DELETE(
 ) {
     try {
         const db = getAdminDb();
+        if (!db) {
+            return NextResponse.json(
+                { error: 'Database unavailable' },
+                { status: 503 }
+            );
+        }
         const { id } = await params;
 
         const docRef = db.collection('fixtures').doc(id);

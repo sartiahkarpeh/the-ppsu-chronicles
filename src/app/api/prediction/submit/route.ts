@@ -28,6 +28,12 @@ export async function POST(request: NextRequest) {
     }
 
     const db = getAdminDb();
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database unavailable' },
+        { status: 503 }
+      );
+    }
     const predictionsRef = db.collection('predictions');
 
     // Check if user or device has already submitted (server-side double-check)

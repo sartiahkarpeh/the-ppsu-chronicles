@@ -13,6 +13,12 @@ export async function POST(request: NextRequest) {
     }
 
     const db = getAdminDb();
+    if (!db) {
+      return NextResponse.json(
+        { error: 'Database unavailable' },
+        { status: 503 }
+      );
+    }
     const predictionsRef = db.collection('predictions');
 
     // Check if prediction exists for this enrollment number OR device ID for this match

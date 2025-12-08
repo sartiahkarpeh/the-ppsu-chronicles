@@ -7,6 +7,7 @@ export const revalidate = 60;
 async function getStories() {
   try {
     const db = getAdminDb();
+    if (!db) return [];
     const storySnapshot = await db.collection('posts')
       .where('status', '==', 'published')
       .orderBy('createdAt', 'desc')

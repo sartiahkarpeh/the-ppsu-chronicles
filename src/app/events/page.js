@@ -7,6 +7,7 @@ export const revalidate = 60;
 async function getUpcomingEvents() {
     try {
         const db = getAdminDb();
+        if (!db) return [];
         const snapshot = await db.collection('upcomingEvents')
             .where('status', '==', 'published')
             .orderBy('date', 'asc')
@@ -34,6 +35,7 @@ async function getUpcomingEvents() {
 async function getPastEvents() {
     try {
         const db = getAdminDb();
+        if (!db) return [];
         const snapshot = await db.collection('events')
             .where('status', '==', 'published')
             .orderBy('date', 'desc')

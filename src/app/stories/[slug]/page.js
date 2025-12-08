@@ -57,6 +57,7 @@ export async function generateMetadata({ params }) {
 async function getStory(slug) {
   try {
     const db = getAdminDb();
+    if (!db) return null;
 
     // Query for a published story with a matching slug
     const snapshot = await db.collection('posts')
@@ -105,6 +106,10 @@ async function getStory(slug) {
 export async function generateStaticParams() {
   try {
     const db = getAdminDb();
+    if (!db) {
+      console.log('Skipping static params for stories - no database connection');
+      return [];
+    }
     const snapshot = await db.collection('posts')
       .where('status', '==', 'published')
       .get();

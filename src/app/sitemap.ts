@@ -78,6 +78,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     // Get Admin Firestore instance
     const db = getAdminDb();
+    if (!db) {
+      console.log('Sitemap: Using static routes only - no database connection');
+      return staticRoutes;
+    }
 
     // Fetch dynamic routes from Firebase Admin SDK
     const [storiesSnapshot, campusNewsSnapshot, clubsSnapshot, spotlightsSnapshot] = await Promise.all([

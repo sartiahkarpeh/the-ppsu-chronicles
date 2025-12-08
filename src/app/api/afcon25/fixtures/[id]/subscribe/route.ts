@@ -13,6 +13,12 @@ export async function POST(
 ) {
     try {
         const db = getAdminDb();
+        if (!db) {
+            return NextResponse.json(
+                { error: 'Database unavailable' },
+                { status: 503 }
+            );
+        }
         const { id: fixtureId } = await params;
         const body = await request.json();
 
@@ -92,6 +98,12 @@ export async function DELETE(
 ) {
     try {
         const db = getAdminDb();
+        if (!db) {
+            return NextResponse.json(
+                { error: 'Database unavailable' },
+                { status: 503 }
+            );
+        }
         const { id: fixtureId } = await params;
         const { searchParams } = new URL(request.url);
         const userIdentifier = searchParams.get('userIdentifier');
@@ -143,6 +155,12 @@ export async function GET(
 ) {
     try {
         const db = getAdminDb();
+        if (!db) {
+            return NextResponse.json(
+                { error: 'Database unavailable' },
+                { status: 503 }
+            );
+        }
         const { id: fixtureId } = await params;
         const { searchParams } = new URL(request.url);
         const userIdentifier = searchParams.get('userIdentifier');

@@ -55,6 +55,7 @@ export async function generateMetadata({ params }) {
 async function getSpotlight(slug) {
     try {
         const db = getAdminDb();
+        if (!db) return null;
 
         const snapshot = await db.collection('spotlights')
             .where('slug', '==', slug)
@@ -93,6 +94,10 @@ async function getSpotlight(slug) {
 export async function generateStaticParams() {
     try {
         const db = getAdminDb();
+        if (!db) {
+            console.log('Skipping static params for spotlights - no database connection');
+            return [];
+        }
         const snapshot = await db.collection('spotlights')
             .where('status', '==', 'published')
             .get();

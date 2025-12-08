@@ -17,6 +17,12 @@ export async function POST(request: NextRequest) {
 
         // Initialize admin SDK
         const adminApp = getAdminApp();
+        if (!adminApp) {
+            return NextResponse.json(
+                { error: 'Firebase unavailable' },
+                { status: 503 }
+            );
+        }
         const adminDb = getFirestore(adminApp);
         const messaging = getMessaging(adminApp);
 
