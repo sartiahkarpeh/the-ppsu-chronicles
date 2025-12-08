@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Search, X, Film, Play } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Pencil, Trash2, Search, X, Film, Play, Upload, Link2, Loader2 } from 'lucide-react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '@/firebase/config';
 import type { Highlight, Match, Team } from '@/types/afcon';
 
 export default function HighlightsManagement() {
@@ -14,6 +15,15 @@ export default function HighlightsManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingHighlight, setEditingHighlight] = useState<Highlight | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Upload state
+  const [uploadMode, setUploadMode] = useState<'url' | 'file'>('url');
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const thumbnailInputRef = useRef<HTMLInputElement>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -57,6 +67,7 @@ export default function HighlightsManagement() {
         matchId: highlight.matchId,
         duration: highlight.duration,
       });
+      setUploadMode('url');
     } else {
       setEditingHighlight(null);
       setFormData({
@@ -67,30 +78,90 @@ export default function HighlightsManagement() {
         matchId: '',
         duration: '',
       });
+      setVideoFile(null);
+      setThumbnailFile(null);
+      setUploadMode('url');
     }
     setIsModalOpen(true);
   };
 
+  // Upload file to Firebase Storage
+  const uploadFile = (file: File, path: string): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const storageRef = ref(storage, path);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on('state_changed',
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+        },
+        (error) => {
+          console.error('Upload error:', error);
+          reject(error);
+        },
+        async () => {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve(downloadURL);
+        }
+      );
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     try {
+      setIsUploading(true);
+      let videoUrl = formData.videoUrl;
+      let thumbnailUrl = formData.thumbnailUrl;
+      let mediaType: 'video' | 'image' | undefined;
+
+      // Upload files if in file mode
+      if (uploadMode === 'file') {
+        if (videoFile) {
+          const timestamp = Date.now();
+          const videoPath = `afcon_highlights/videos/${timestamp}_${videoFile.name}`;
+          videoUrl = await uploadFile(videoFile, videoPath);
+          mediaType = videoFile.type.startsWith('video/') ? 'video' : 'image';
+        }
+
+        if (thumbnailFile) {
+          const timestamp = Date.now();
+          const thumbPath = `afcon_highlights/thumbnails/${timestamp}_${thumbnailFile.name}`;
+          thumbnailUrl = await uploadFile(thumbnailFile, thumbPath);
+        }
+      }
+
       const dataToSave = {
-        ...formData,
+        title: formData.title,
+        description: formData.description,
+        videoUrl,
+        thumbnailUrl,
+        matchId: formData.matchId,
+        duration: formData.duration,
+        mediaType,
         updatedAt: serverTimestamp(),
       };
 
       if (editingHighlight) {
-        await updateDoc(doc(db, 'afcon_highlights', editingHighlight.id), dataToSave);
+        await updateDoc(doc(db, 'afcon_highlights', editingHighlight.id!), dataToSave);
       } else {
         await addDoc(collection(db, 'afcon_highlights'), {
           ...dataToSave,
           createdAt: serverTimestamp(),
         });
       }
+
       setIsModalOpen(false);
+      setVideoFile(null);
+      setThumbnailFile(null);
+      setUploadProgress(0);
     } catch (error) {
       console.error('Error saving highlight:', error);
       alert('Error saving highlight. Check console.');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -186,7 +257,7 @@ export default function HighlightsManagement() {
                       <Pencil className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(highlight.id)}
+                      onClick={() => handleDelete(highlight.id!)}
                       className="p-1.5 text-red-600 hover:bg-black hover:text-white dark:hover:bg-black rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -234,26 +305,124 @@ export default function HighlightsManagement() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Video URL (YouTube/MP4)</label>
-                <input
-                  type="url"
-                  required
-                  value={formData.videoUrl}
-                  onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
-                  className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-afcon-green outline-none"
-                />
+              {/* Upload Mode Toggle */}
+              <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setUploadMode('url')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${uploadMode === 'url'
+                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                >
+                  <Link2 className="w-4 h-4" />
+                  URL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUploadMode('file')}
+                  className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-sm font-medium transition-all ${uploadMode === 'file'
+                      ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                >
+                  <Upload className="w-4 h-4" />
+                  Upload File
+                </button>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Thumbnail URL</label>
-                <input
-                  type="url"
-                  value={formData.thumbnailUrl}
-                  onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
-                  className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-afcon-green outline-none"
-                />
-              </div>
+              {uploadMode === 'url' ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Video URL (YouTube/MP4)</label>
+                    <input
+                      type="url"
+                      required
+                      value={formData.videoUrl}
+                      onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                      className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-afcon-green outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Thumbnail URL</label>
+                    <input
+                      type="url"
+                      value={formData.thumbnailUrl}
+                      onChange={(e) => setFormData({ ...formData, thumbnailUrl: e.target.value })}
+                      className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 focus:ring-2 focus:ring-afcon-green outline-none"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Video/Image File Upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Video/Image File</label>
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/*,image/*"
+                      onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => videoInputRef.current?.click()}
+                      className={`w-full py-4 border-2 border-dashed rounded-xl transition-all flex flex-col items-center gap-2 ${videoFile
+                          ? 'border-afcon-green bg-afcon-green/10 text-afcon-green'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-afcon-green text-gray-500'
+                        }`}
+                    >
+                      <Upload className="w-6 h-6" />
+                      <span className="text-sm font-medium">
+                        {videoFile ? videoFile.name : 'Click to select video or image'}
+                      </span>
+                      <span className="text-xs text-gray-400">MP4, WebM, MOV, JPG, PNG, WebP</span>
+                    </button>
+                  </div>
+
+                  {/* Thumbnail Upload */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Thumbnail (Optional)</label>
+                    <input
+                      ref={thumbnailInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => thumbnailInputRef.current?.click()}
+                      className={`w-full py-3 border-2 border-dashed rounded-xl transition-all flex items-center justify-center gap-2 ${thumbnailFile
+                          ? 'border-afcon-green bg-afcon-green/10 text-afcon-green'
+                          : 'border-gray-300 dark:border-gray-600 hover:border-afcon-green text-gray-500'
+                        }`}
+                    >
+                      <span className="text-sm">
+                        {thumbnailFile ? thumbnailFile.name : 'Select thumbnail image'}
+                      </span>
+                    </button>
+                  </div>
+
+                  {/* Upload Progress */}
+                  {isUploading && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Uploading...</span>
+                        <span className="font-medium text-afcon-green">{Math.round(uploadProgress)}%</span>
+                      </div>
+                      <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-afcon-green transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -289,14 +458,17 @@ export default function HighlightsManagement() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  disabled={isUploading}
+                  className="px-6 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl"
+                  disabled={isUploading || (uploadMode === 'file' && !videoFile && !editingHighlight)}
+                  className="px-6 py-3 rounded-xl bg-black text-white hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
+                  {isUploading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {editingHighlight ? 'Update Highlight' : 'Create Highlight'}
                 </button>
               </div>

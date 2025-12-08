@@ -296,6 +296,91 @@ export const subscribeToStandings = (callback: (standings: GroupStandings[]) => 
   });
 };
 
+// Update standings after a match finishes
+export const updateStandingsAfterMatch = async (
+  homeTeamId: string,
+  awayTeamId: string,
+  homeScore: number,
+  awayScore: number
+): Promise<void> => {
+  try {
+    // Get current standings for both teams
+    const standingsSnapshot = await getDocs(collection(db, STANDINGS_COLLECTION));
+    const standingsMap = new Map<string, { id: string; data: any }>();
+
+    standingsSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.teamId) {
+        standingsMap.set(data.teamId, { id: doc.id, data });
+      }
+    });
+
+    const homeStanding = standingsMap.get(homeTeamId);
+    const awayStanding = standingsMap.get(awayTeamId);
+
+    // Determine match result
+    const isHomeWin = homeScore > awayScore;
+    const isAwayWin = awayScore > homeScore;
+    const isDraw = homeScore === awayScore;
+
+    // Update home team standings
+    if (homeStanding) {
+      const current = homeStanding.data;
+      const newPlayed = (current.played || 0) + 1;
+      const newWon = (current.won || 0) + (isHomeWin ? 1 : 0);
+      const newDrawn = (current.drawn || 0) + (isDraw ? 1 : 0);
+      const newLost = (current.lost || 0) + (isAwayWin ? 1 : 0);
+      const newGoalsFor = (current.goalsFor || 0) + homeScore;
+      const newGoalsAgainst = (current.goalsAgainst || 0) + awayScore;
+      const newGoalDifference = newGoalsFor - newGoalsAgainst;
+      const newPoints = (newWon * 3) + newDrawn;
+
+      await updateDoc(doc(db, STANDINGS_COLLECTION, homeStanding.id), {
+        played: newPlayed,
+        won: newWon,
+        drawn: newDrawn,
+        lost: newLost,
+        goalsFor: newGoalsFor,
+        goalsAgainst: newGoalsAgainst,
+        goalDifference: newGoalDifference,
+        points: newPoints,
+        updatedAt: Date.now(),
+      });
+    }
+
+    // Update away team standings
+    if (awayStanding) {
+      const current = awayStanding.data;
+      const newPlayed = (current.played || 0) + 1;
+      const newWon = (current.won || 0) + (isAwayWin ? 1 : 0);
+      const newDrawn = (current.drawn || 0) + (isDraw ? 1 : 0);
+      const newLost = (current.lost || 0) + (isHomeWin ? 1 : 0);
+      const newGoalsFor = (current.goalsFor || 0) + awayScore;
+      const newGoalsAgainst = (current.goalsAgainst || 0) + homeScore;
+      const newGoalDifference = newGoalsFor - newGoalsAgainst;
+      const newPoints = (newWon * 3) + newDrawn;
+
+      await updateDoc(doc(db, STANDINGS_COLLECTION, awayStanding.id), {
+        played: newPlayed,
+        won: newWon,
+        drawn: newDrawn,
+        lost: newLost,
+        goalsFor: newGoalsFor,
+        goalsAgainst: newGoalsAgainst,
+        goalDifference: newGoalDifference,
+        points: newPoints,
+        updatedAt: Date.now(),
+      });
+    }
+
+    console.log('Standings updated for match:', homeTeamId, 'vs', awayTeamId);
+  } catch (error) {
+    console.error('Error updating standings:', error);
+    throw error;
+  }
+};
+
+
 // ============= HELPER: Get Match with Teams =============
 
 export const getMatchWithTeams = async (matchId: string): Promise<MatchWithTeams | null> => {

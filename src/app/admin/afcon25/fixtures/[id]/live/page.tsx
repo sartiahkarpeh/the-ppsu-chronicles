@@ -22,6 +22,7 @@ import type { Fixture, FixtureStatusType } from '@/types/fixtureTypes';
 import type { Team } from '@/types/afcon';
 import { useLiveClock } from '@/hooks/useLiveClock';
 import { sendFixtureNotification, notificationTemplates } from '@/lib/afcon/notificationService';
+import { updateStandingsAfterMatch } from '@/lib/afcon/firestore';
 
 type EventType = 'goal' | 'yellow' | 'red' | 'sub' | 'var' | 'injury' | 'penalty_scored' | 'penalty_missed' | 'own_goal';
 
@@ -251,6 +252,19 @@ export default function LiveScorecard({
                 awayTeam: awayTeam.name,
                 score,
             });
+        }
+
+        // Auto-update standings after match ends
+        try {
+            await updateStandingsAfterMatch(
+                fixture.homeTeamId,
+                fixture.awayTeamId,
+                fixture.homeScore,
+                fixture.awayScore
+            );
+            console.log('Standings updated successfully');
+        } catch (error) {
+            console.error('Error updating standings:', error);
         }
     };
 

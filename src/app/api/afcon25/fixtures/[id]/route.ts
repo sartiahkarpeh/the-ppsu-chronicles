@@ -5,7 +5,7 @@ import { Timestamp } from 'firebase-admin/firestore';
 
 /**
  * GET /api/afcon25/fixtures/[id]
- * Get a single fixture by ID or slug
+ * Get a single fixture by ID or slug, including team data for OG tags
  */
 export async function GET(
     request: NextRequest,
@@ -40,9 +40,39 @@ export async function GET(
         }
 
         const data = doc.data();
+
+        // Fetch team data for names and flags
+        let homeTeamName = 'TBD';
+        let awayTeamName = 'TBD';
+        let homeTeamFlag = '';
+        let awayTeamFlag = '';
+
+        if (data?.homeTeamId) {
+            const homeTeamDoc = await db.collection('afcon_teams').doc(data.homeTeamId).get();
+            if (homeTeamDoc.exists) {
+                const homeTeamData = homeTeamDoc.data();
+                homeTeamName = homeTeamData?.name || 'TBD';
+                homeTeamFlag = homeTeamData?.flag_url || homeTeamData?.crest_url || '';
+            }
+        }
+
+        if (data?.awayTeamId) {
+            const awayTeamDoc = await db.collection('afcon_teams').doc(data.awayTeamId).get();
+            if (awayTeamDoc.exists) {
+                const awayTeamData = awayTeamDoc.data();
+                awayTeamName = awayTeamData?.name || 'TBD';
+                awayTeamFlag = awayTeamData?.flag_url || awayTeamData?.crest_url || '';
+            }
+        }
+
         const fixture = {
             id: doc.id,
             ...data,
+            // Add populated team data
+            homeTeamName,
+            awayTeamName,
+            homeTeamFlag,
+            awayTeamFlag,
             // Convert Timestamps to ISO strings
             kickoffDateTime: data?.kickoffDateTime?.toDate?.()?.toISOString() || data?.kickoffDateTime,
             createdAt: data?.createdAt?.toDate?.()?.toISOString() || data?.createdAt,

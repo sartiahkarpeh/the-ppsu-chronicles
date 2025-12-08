@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Oswald } from "next/font/google";
 import "./globals.css";
-import Navbar from "../components/Navbar";
+import ConditionalNavbar from "../components/ConditionalNavbar";
 
 const outfit = Outfit({
   variable: "--font-outfit",
@@ -64,7 +64,7 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} ${oswald.variable} antialiased`}
       >
-        <Navbar />
+        <ConditionalNavbar />
         {children}
       </body>
     </html>

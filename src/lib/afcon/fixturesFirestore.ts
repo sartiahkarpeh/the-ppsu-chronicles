@@ -187,6 +187,19 @@ export async function getFixtureBySlug(slug: string): Promise<Fixture | null> {
 }
 
 /**
+ * Get a fixture by slug or ID (tries slug first, then falls back to ID)
+ * This allows URLs to work with either friendly slugs or document IDs
+ */
+export async function getFixtureBySlugOrId(slugOrId: string): Promise<Fixture | null> {
+    // First, try to find by slug
+    const bySlug = await getFixtureBySlug(slugOrId);
+    if (bySlug) return bySlug;
+
+    // Fall back to ID lookup
+    return await getFixture(slugOrId);
+}
+
+/**
  * Create a new fixture
  */
 export async function createFixture(

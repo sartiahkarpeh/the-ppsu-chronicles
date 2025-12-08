@@ -113,7 +113,7 @@ export default function StandingsManagement() {
                 updatedAt: serverTimestamp(),
             };
 
-            if (editingStanding) {
+            if (editingStanding && editingStanding.id) {
                 await updateDoc(doc(db, 'afcon_standings', editingStanding.id), dataToSave);
             } else {
                 await addDoc(collection(db, 'afcon_standings'), {
@@ -178,6 +178,7 @@ export default function StandingsManagement() {
                         <thead className="bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                             <tr>
                                 <th className="px-6 py-4 font-semibold text-black dark:text-gray-300">Group</th>
+                                <th className="px-4 py-4 font-semibold text-black dark:text-gray-300 w-14">Flag</th>
                                 <th className="px-6 py-4 font-semibold text-black dark:text-gray-300">Team</th>
                                 <th className="px-4 py-4 font-semibold text-center text-black dark:text-gray-300" title="Played">P</th>
                                 <th className="px-4 py-4 font-semibold text-center text-black dark:text-gray-300" title="Won">W</th>
@@ -190,40 +191,52 @@ export default function StandingsManagement() {
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                             {loading ? (
-                                <tr><td colSpan={9} className="px-6 py-8 text-center text-gray-500">Loading standings...</td></tr>
+                                <tr><td colSpan={10} className="px-6 py-8 text-center text-gray-500">Loading standings...</td></tr>
                             ) : filteredStandings.length === 0 ? (
-                                <tr><td colSpan={9} className="px-6 py-8 text-center text-gray-500">No standings found.</td></tr>
+                                <tr><td colSpan={10} className="px-6 py-8 text-center text-gray-500">No standings found.</td></tr>
                             ) : (
-                                filteredStandings.map((standing) => (
-                                    <tr key={standing.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                                        <td className="px-6 py-4 font-bold text-afcon-green">{standing.group}</td>
-                                        <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{standing.teamName}</td>
-                                        <td className="px-4 py-4 text-center text-gray-600 dark:text-gray-400">{standing.played}</td>
-                                        <td className="px-4 py-4 text-center text-gray-600 dark:text-gray-400">{standing.won}</td>
-                                        <td className="px-4 py-4 text-center text-gray-600 dark:text-gray-400">{standing.drawn}</td>
-                                        <td className="px-4 py-4 text-center text-gray-600 dark:text-gray-400">{standing.lost}</td>
-                                        <td className="px-4 py-4 text-center text-gray-600 dark:text-gray-400">{standing.goalDifference > 0 ? '+' : ''}{standing.goalDifference}</td>
-                                        <td className="px-4 py-4 text-center font-bold text-gray-900 dark:text-white">{standing.points}</td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={() => handleOpenModal(standing)}
-                                                    className="p-2 text-blue-600 hover:bg-black hover:text-white dark:hover:bg-black rounded-lg transition-colors"
-                                                    title="Edit"
-                                                >
-                                                    <Pencil className="w-4 h-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDelete(standing.id)}
-                                                    className="p-2 text-red-600 hover:bg-black hover:text-white dark:hover:bg-black rounded-lg transition-colors"
-                                                    title="Delete"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
+                                filteredStandings.map((standing) => {
+                                    const team = teams.find(t => t.id === standing.teamId);
+                                    return (
+                                        <tr key={standing.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                                            <td className="px-6 py-4 font-bold text-afcon-green">{standing.group}</td>
+                                            <td className="px-4 py-4">
+                                                {team?.flag_url ? (
+                                                    <img src={team.flag_url} alt={standing.teamName} className="w-8 h-6 object-cover rounded shadow-sm" />
+                                                ) : (
+                                                    <div className="w-8 h-6 bg-gray-200 dark:bg-gray-600 rounded flex items-center justify-center">
+                                                        <span className="text-xs text-gray-500">🏴</span>
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{standing.teamName}</td>
+                                            <td className="px-4 py-4 text-center text-gray-600 dark:text-gray-400">{standing.played}</td>
+                                            <td className="px-4 py-4 text-center text-gray-600 dark:text-gray-400">{standing.won}</td>
+                                            <td className="px-4 py-4 text-center text-gray-600 dark:text-gray-400">{standing.drawn}</td>
+                                            <td className="px-4 py-4 text-center text-gray-600 dark:text-gray-400">{standing.lost}</td>
+                                            <td className="px-4 py-4 text-center text-gray-600 dark:text-gray-400">{standing.goalDifference > 0 ? '+' : ''}{standing.goalDifference}</td>
+                                            <td className="px-4 py-4 text-center font-bold text-gray-900 dark:text-white">{standing.points}</td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => handleOpenModal(standing)}
+                                                        className="p-2 text-blue-600 hover:bg-black hover:text-white dark:hover:bg-black rounded-lg transition-colors"
+                                                        title="Edit"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => standing.id && handleDelete(standing.id)}
+                                                        className="p-2 text-red-600 hover:bg-black hover:text-white dark:hover:bg-black rounded-lg transition-colors"
+                                                        title="Delete"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>

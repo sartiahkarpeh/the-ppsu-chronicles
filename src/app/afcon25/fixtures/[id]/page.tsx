@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Share2, Bell, BellOff, Star, StarOff, Trophy, Calendar, MapPin, Users, Table as TableIcon, Activity, X } from 'lucide-react';
 import { Timestamp, doc, onSnapshot, collection, query, orderBy, getDocs, where } from 'firebase/firestore';
 import { db } from '@/firebase/config';
+import { getFixtureBySlugOrId } from '@/lib/afcon/fixturesFirestore';
 import dayjs from 'dayjs';
 
 import { useLiveClock } from '@/hooks/useLiveClock';
@@ -60,35 +61,59 @@ export default function FixtureDetailPage({
         fetchTeams();
     }, []);
 
-    // Subscribe to fixture updates with team data
+    // Resolve slug to fixture ID and subscribe to updates
     useEffect(() => {
-        const unsubscribe = onSnapshot(doc(db, 'fixtures', resolvedParams.id), (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.data();
-                const homeTeam = teams.get(data.homeTeamId);
-                const awayTeam = teams.get(data.awayTeamId);
+        let unsubscribe: (() => void) | null = null;
+        let cancelled = false;
 
-                setFixture({
-                    id: snapshot.id,
-                    ...data,
-                    homeTeamName: homeTeam?.name || 'TBD',
-                    homeTeamLogoUrl: homeTeam?.flag_url || homeTeam?.crest_url || '',
-                    awayTeamName: awayTeam?.name || 'TBD',
-                    awayTeamLogoUrl: awayTeam?.flag_url || awayTeam?.crest_url || '',
-                } as Fixture);
-            } else {
+        const setupSubscription = async () => {
+            // First, resolve the slug/ID to get the actual fixture
+            const fixtureData = await getFixtureBySlugOrId(resolvedParams.id);
+
+            if (cancelled) return;
+
+            if (!fixtureData) {
                 setFixture(null);
+                setLoading(false);
+                return;
             }
-            setLoading(false);
-        });
 
-        return () => unsubscribe();
+            // Now subscribe to the fixture document using the resolved ID
+            unsubscribe = onSnapshot(doc(db, 'fixtures', fixtureData.id), (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    const homeTeam = teams.get(data.homeTeamId);
+                    const awayTeam = teams.get(data.awayTeamId);
+
+                    setFixture({
+                        id: snapshot.id,
+                        ...data,
+                        homeTeamName: homeTeam?.name || 'TBD',
+                        homeTeamLogoUrl: homeTeam?.flag_url || homeTeam?.crest_url || '',
+                        awayTeamName: awayTeam?.name || 'TBD',
+                        awayTeamLogoUrl: awayTeam?.flag_url || awayTeam?.crest_url || '',
+                    } as Fixture);
+                } else {
+                    setFixture(null);
+                }
+                setLoading(false);
+            });
+        };
+
+        setupSubscription();
+
+        return () => {
+            cancelled = true;
+            if (unsubscribe) unsubscribe();
+        };
     }, [resolvedParams.id, teams]);
 
-    // Subscribe to match events
+    // Subscribe to match events - only after fixture is loaded
     useEffect(() => {
+        if (!fixture?.id) return;
+
         const q = query(
-            collection(db, 'fixtures', resolvedParams.id, 'events'),
+            collection(db, 'fixtures', fixture.id, 'events'),
             orderBy('minute', 'asc')
         );
 
@@ -101,7 +126,7 @@ export default function FixtureDetailPage({
         });
 
         return () => unsubscribe();
-    }, [resolvedParams.id]);
+    }, [fixture?.id]);
 
     // Fetch standings for the fixture's group
     useEffect(() => {
@@ -159,7 +184,9 @@ export default function FixtureDetailPage({
     } = useNotificationSubscription(fixture?.id || null);
 
     const handleShare = async () => {
-        const url = `${window.location.origin}/afcon25/fixtures/${resolvedParams.id}`;
+        // Use slug for SEO-friendly URLs, fallback to ID
+        const fixtureSlug = fixture?.slug || resolvedParams.id;
+        const url = `${window.location.origin}/afcon25/fixtures/${fixtureSlug}`;
         const title = fixture ? `${fixture.homeTeamName} vs ${fixture.awayTeamName}` : 'Match';
         const text = fixture ? `Watch ${fixture.homeTeamName} vs ${fixture.awayTeamName} - AFCON 2025` : '';
 
@@ -204,7 +231,7 @@ export default function FixtureDetailPage({
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#0f0f13] flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f13] flex items-center justify-center">
                 <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
             </div>
         );
@@ -212,10 +239,10 @@ export default function FixtureDetailPage({
 
     if (!fixture) {
         return (
-            <div className="min-h-screen bg-[#0f0f13] flex flex-col items-center justify-center px-4">
+            <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f13] flex flex-col items-center justify-center px-4">
                 <div className="text-6xl mb-4">⚽</div>
-                <h1 className="text-xl font-bold text-white mb-2">Fixture Not Found</h1>
-                <p className="text-gray-500 text-center mb-6">
+                <h1 className="text-xl font-bold text-black dark:text-white mb-2">Fixture Not Found</h1>
+                <p className="text-gray-600 dark:text-gray-500 text-center mb-6">
                     This match doesn't exist or has been removed.
                 </p>
                 <button
@@ -251,7 +278,7 @@ export default function FixtureDetailPage({
         : '';
 
     return (
-        <div className="min-h-screen bg-[#0f0f13]">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f13]">
             {/* Stadium Background with Gradient */}
             <div
                 className="relative h-[280px] bg-cover bg-center"
@@ -305,7 +332,7 @@ export default function FixtureDetailPage({
                 transition={{ duration: 0.4 }}
                 className="mx-4 -mt-[120px] relative z-10"
             >
-                <div className="bg-gray-900/90 backdrop-blur-lg rounded-3xl p-6 border border-gray-800">
+                <div className="bg-white dark:bg-gray-900/90 backdrop-blur-lg rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-xl">
                     {/* Teams and Score/Time */}
                     <div className="flex items-center justify-between gap-4">
                         {/* Home Team */}
@@ -317,13 +344,13 @@ export default function FixtureDetailPage({
                                     className="w-16 h-16 object-contain mb-2"
                                 />
                             ) : (
-                                <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mb-2">
-                                    <span className="text-lg font-bold text-gray-400">
+                                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-2">
+                                    <span className="text-lg font-bold text-gray-500 dark:text-gray-400">
                                         {(fixture.homeTeamName || 'HM').substring(0, 2).toUpperCase()}
                                     </span>
                                 </div>
                             )}
-                            <span className="text-white font-semibold text-sm mb-2 line-clamp-2">
+                            <span className="text-black dark:text-white font-semibold text-sm mb-2 line-clamp-2">
                                 {fixture.homeTeamName}
                             </span>
                             {fixture.homeRecentForm && fixture.homeRecentForm.length > 0 && (
@@ -337,7 +364,7 @@ export default function FixtureDetailPage({
                             {showScore ? (
                                 <>
                                     {/* Score */}
-                                    <div className="flex items-center gap-3 text-4xl font-bold text-white mb-1">
+                                    <div className="flex items-center gap-3 text-4xl font-bold text-black dark:text-white mb-1">
                                         <span>{fixture.homeScore}</span>
                                         <span className="text-gray-600 text-2xl">-</span>
                                         <span>{fixture.awayScore}</span>
@@ -377,7 +404,7 @@ export default function FixtureDetailPage({
                             ) : (
                                 <>
                                     {/* Kickoff Time */}
-                                    <span className="text-4xl font-bold text-white mb-1">
+                                    <span className="text-4xl font-bold text-black dark:text-white mb-1">
                                         {formatKickoffTime()}
                                     </span>
                                     <span className="text-gray-500 text-sm">{formatKickoffDate()}</span>
@@ -394,13 +421,13 @@ export default function FixtureDetailPage({
                                     className="w-16 h-16 object-contain mb-2"
                                 />
                             ) : (
-                                <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mb-2">
-                                    <span className="text-lg font-bold text-gray-400">
+                                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-2">
+                                    <span className="text-lg font-bold text-gray-500 dark:text-gray-400">
                                         {(fixture.awayTeamName || 'AW').substring(0, 2).toUpperCase()}
                                     </span>
                                 </div>
                             )}
-                            <span className="text-white font-semibold text-sm mb-2 line-clamp-2">
+                            <span className="text-black dark:text-white font-semibold text-sm mb-2 line-clamp-2">
                                 {fixture.awayTeamName}
                             </span>
                             {fixture.awayRecentForm && fixture.awayRecentForm.length > 0 && (
@@ -411,7 +438,7 @@ export default function FixtureDetailPage({
                     </div>
 
                     {/* Match Events Row */}
-                    <div className="mt-6 pt-4 border-t border-gray-800/50 grid grid-cols-2 gap-8">
+                    <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-800/50 grid grid-cols-2 gap-8">
                         {/* Home Events */}
                         <div className="text-right space-y-1">
                             {(() => {
@@ -423,7 +450,7 @@ export default function FixtureDetailPage({
                                 });
 
                                 return Array.from(grouped.entries()).map(([player, playerEvents]) => (
-                                    <div key={player} className="text-sm text-gray-300">
+                                    <div key={player} className="text-sm text-gray-700 dark:text-gray-300">
                                         <span className="font-medium mr-2">{player}</span>
                                         <span className="text-gray-500 font-mono text-xs">
                                             {playerEvents.sort((a, b) => a.minute - b.minute).map((e, idx) => (
@@ -453,7 +480,7 @@ export default function FixtureDetailPage({
                                 });
 
                                 return Array.from(grouped.entries()).map(([player, playerEvents]) => (
-                                    <div key={player} className="text-sm text-gray-300">
+                                    <div key={player} className="text-sm text-gray-700 dark:text-gray-300">
                                         <span className="text-gray-500 font-mono text-xs mr-2">
                                             {playerEvents.sort((a, b) => a.minute - b.minute).map((e, idx) => (
                                                 <span key={idx}>
@@ -474,7 +501,7 @@ export default function FixtureDetailPage({
                     </div>
 
                     {/* Venue */}
-                    <div className="mt-4 pt-4 border-t border-gray-800 text-center">
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-800 text-center">
                         <span className="text-xs text-gray-500">📍 {fixture.venue}</span>
                     </div>
                 </div>
@@ -489,8 +516,8 @@ export default function FixtureDetailPage({
                             whileTap={{ scale: 0.95 }}
                             onClick={() => setActiveTab(tab)}
                             className={`flex-1 py-3 rounded-xl font-semibold text-sm capitalize transition-all ${activeTab === tab
-                                ? 'bg-gray-800 text-white'
-                                : 'bg-gray-900/50 text-gray-500'
+                                ? 'bg-gray-200 dark:bg-gray-800 text-black dark:text-white'
+                                : 'bg-gray-100 dark:bg-gray-900/50 text-gray-500 dark:text-gray-500'
                                 }`}
                         >
                             {tab}
@@ -508,9 +535,9 @@ export default function FixtureDetailPage({
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="bg-gray-900/50 rounded-2xl p-4 border border-gray-800"
+                            className="bg-white dark:bg-gray-900/50 rounded-2xl p-4 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
-                            <h3 className="text-white font-semibold mb-4">Starting Lineups</h3>
+                            <h3 className="text-black dark:text-white font-semibold mb-4">Starting Lineups</h3>
                             <div className="grid grid-cols-2 gap-4">
                                 {/* Home Team */}
                                 <div>
@@ -531,7 +558,7 @@ export default function FixtureDetailPage({
                                             return players.slice(0, 11).map((player, index) => (
                                                 <div
                                                     key={index}
-                                                    className="flex items-center gap-2 text-sm text-gray-300"
+                                                    className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
                                                 >
                                                     <span className="w-5 h-5 bg-green-600/30 text-green-400 rounded-full flex items-center justify-center text-xs font-medium">
                                                         {index + 1}
@@ -587,9 +614,9 @@ export default function FixtureDetailPage({
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="bg-gray-900/50 rounded-2xl p-4 border border-gray-800"
+                            className="bg-white dark:bg-gray-900/50 rounded-2xl p-4 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
-                            <h3 className="text-white font-semibold mb-4">{fixture.groupOrStage}</h3>
+                            <h3 className="text-black dark:text-white font-semibold mb-4">{fixture.groupOrStage}</h3>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">
                                     <thead>
@@ -617,10 +644,10 @@ export default function FixtureDetailPage({
                                                 return (
                                                     <tr
                                                         key={standing.id || index}
-                                                        className={`border-t border-gray-800 ${isCurrentTeam ? 'bg-green-900/20' : ''}`}
+                                                        className={`border-t border-gray-200 dark:border-gray-800 ${isCurrentTeam ? 'bg-green-50 dark:bg-green-900/20' : ''}`}
                                                     >
                                                         <td className="py-3 text-gray-400">{index + 1}</td>
-                                                        <td className={`py-3 ${isCurrentTeam ? 'text-green-400 font-semibold' : 'text-white'}`}>
+                                                        <td className={`py-3 ${isCurrentTeam ? 'text-green-600 dark:text-green-400 font-semibold' : 'text-black dark:text-white'}`}>
                                                             {standing.teamName}
                                                         </td>
                                                         <td className="py-3 text-center text-gray-400">{standing.played}</td>
@@ -630,7 +657,7 @@ export default function FixtureDetailPage({
                                                         <td className="py-3 text-center text-gray-400">
                                                             {standing.goalDifference > 0 ? '+' : ''}{standing.goalDifference}
                                                         </td>
-                                                        <td className={`py-3 text-center font-bold ${isCurrentTeam ? 'text-green-400' : 'text-white'}`}>
+                                                        <td className={`py-3 text-center font-bold ${isCurrentTeam ? 'text-green-600 dark:text-green-400' : 'text-black dark:text-white'}`}>
                                                             {standing.points}
                                                         </td>
                                                     </tr>
@@ -649,9 +676,9 @@ export default function FixtureDetailPage({
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="bg-gray-900/50 rounded-2xl p-4 border border-gray-800"
+                            className="bg-white dark:bg-gray-900/50 rounded-2xl p-4 border border-gray-200 dark:border-gray-800 shadow-sm"
                         >
-                            <h3 className="text-white font-semibold mb-4">Match Statistics</h3>
+                            <h3 className="text-black dark:text-white font-semibold mb-4">Match Statistics</h3>
                             <div className="space-y-4">
                                 {/* Possession */}
                                 <StatRow label="Possession" home={55} away={45} unit="%" />
@@ -712,9 +739,9 @@ function StatRow({
     return (
         <div>
             <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-white font-medium">{home}{unit}</span>
-                <span className="text-gray-500 text-xs">{label}</span>
-                <span className="text-white font-medium">{away}{unit}</span>
+                <span className="text-black dark:text-white font-medium">{home}{unit}</span>
+                <span className="text-gray-600 dark:text-gray-500 text-xs">{label}</span>
+                <span className="text-black dark:text-white font-medium">{away}{unit}</span>
             </div>
             <div className="flex gap-1 h-1.5">
                 <div
@@ -729,3 +756,4 @@ function StatRow({
         </div>
     );
 }
+

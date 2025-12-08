@@ -178,17 +178,19 @@ export interface FixtureFilters {
 // ============= UTILITY FUNCTIONS =============
 
 /**
- * Generate a URL-friendly slug from team names and date
+ * Generate a URL-friendly slug from team names and year
+ * Format: {home-team}-vs-{away-team}-{year}
+ * Example: liberia-vs-eswatini-2025
  */
 export function generateFixtureSlug(
     homeTeam: string,
     awayTeam: string,
     kickoffDate: Date
 ): string {
-    const homeSlug = homeTeam.toLowerCase().replace(/\s+/g, '-');
-    const awaySlug = awayTeam.toLowerCase().replace(/\s+/g, '-');
-    const dateStr = kickoffDate.toISOString().split('T')[0];
-    return `${homeSlug}-vs-${awaySlug}-${dateStr}`;
+    const homeSlug = homeTeam.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const awaySlug = awayTeam.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const year = kickoffDate.getFullYear();
+    return `${homeSlug}-vs-${awaySlug}-${year}`;
 }
 
 /**

@@ -95,8 +95,11 @@ export interface Highlight {
   id?: string;
   matchId: string;
   title: string;
-  youtubeId: string;
+  description: string;
+  videoUrl: string;
   thumbnailUrl: string;
+  duration: string;
+  mediaType?: 'video' | 'image';  // Type of uploaded media
   uploadedAt: number;
   createdBy?: string;
 }

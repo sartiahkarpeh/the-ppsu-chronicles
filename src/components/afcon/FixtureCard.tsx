@@ -16,12 +16,12 @@ interface FixtureCardProps {
 
 function getStatusBadge(status: FixtureStatusType) {
     const badges: Record<FixtureStatusType, { text: string; class: string }> = {
-        upcoming: { text: 'UPCOMING', class: 'bg-blue-500/20 text-blue-400' },
-        live: { text: 'LIVE', class: 'bg-red-500/30 text-red-400 animate-pulse' },
-        ht: { text: 'HT', class: 'bg-yellow-500/20 text-yellow-400' },
-        ft: { text: 'FT', class: 'bg-gray-500/20 text-gray-400' },
-        postponed: { text: 'PPD', class: 'bg-orange-500/20 text-orange-400' },
-        cancelled: { text: 'CAN', class: 'bg-red-500/20 text-red-400' },
+        upcoming: { text: 'UPCOMING', class: 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400' },
+        live: { text: 'LIVE', class: 'bg-red-100 dark:bg-red-500/30 text-red-600 dark:text-red-400 animate-pulse' },
+        ht: { text: 'HT', class: 'bg-yellow-100 dark:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400' },
+        ft: { text: 'FT', class: 'bg-gray-100 dark:bg-gray-500/20 text-gray-600 dark:text-gray-400' },
+        postponed: { text: 'PPD', class: 'bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400' },
+        cancelled: { text: 'CAN', class: 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400' },
     };
     return badges[status];
 }
@@ -75,12 +75,12 @@ export default function FixtureCard({ fixture, onClick }: FixtureCardProps) {
         <Link href={`/afcon25/fixtures/${fixture.id}`}>
             <motion.div
                 whileTap={{ scale: 0.98 }}
-                className="bg-gray-900/80 backdrop-blur-sm rounded-2xl p-4 border border-gray-800 hover:border-gray-700 transition-all cursor-pointer"
+                className="bg-white dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-all cursor-pointer shadow-sm"
                 onClick={onClick}
             >
                 {/* Top row: Stage and Status */}
                 <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs text-gray-500 uppercase tracking-wider">
+                    <span className="text-xs text-gray-500 dark:text-gray-500 uppercase tracking-wider">
                         {fixture.groupOrStage}
                     </span>
                     <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badge.class}`}>
@@ -100,11 +100,11 @@ export default function FixtureCard({ fixture, onClick }: FixtureCardProps) {
                                     className="w-8 h-8 object-contain"
                                 />
                             ) : (
-                                <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-xs text-gray-400">
+                                <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-xs text-gray-500 dark:text-gray-400">
                                     {(fixture.homeTeamName || 'HM').substring(0, 2).toUpperCase()}
                                 </div>
                             )}
-                            <span className="text-white font-medium text-sm truncate">
+                            <span className="text-black dark:text-white font-medium text-sm truncate">
                                 {fixture.homeTeamName}
                             </span>
                         </div>
@@ -119,38 +119,38 @@ export default function FixtureCard({ fixture, onClick }: FixtureCardProps) {
                     <div className="flex flex-col items-center px-3 min-w-[70px]">
                         {showScore ? (
                             <>
-                                <div className="flex items-center gap-2 text-xl font-bold text-white">
+                                <div className="flex items-center gap-2 text-xl font-bold text-black dark:text-white">
                                     <span>{fixture.homeScore}</span>
-                                    <span className="text-gray-500">-</span>
+                                    <span className="text-gray-400 dark:text-gray-500">-</span>
                                     <span>{fixture.awayScore}</span>
                                 </div>
                                 {isLive && (
                                     <div className="flex flex-col items-center">
-                                        <span className="text-xs text-red-400 font-mono font-bold mt-1 px-2 py-0.5 bg-red-500/20 rounded-full">
+                                        <span className="text-xs text-red-500 dark:text-red-400 font-mono font-bold mt-1 px-2 py-0.5 bg-red-100 dark:bg-red-500/20 rounded-full">
                                             {displayTime}
                                         </span>
                                         {inAddedTime && fixture.addedTime && fixture.addedTime > 0 && (
-                                            <span className="text-[10px] text-yellow-400 mt-0.5">
+                                            <span className="text-[10px] text-yellow-600 dark:text-yellow-400 mt-0.5">
                                                 +{fixture.addedTime}&apos;
                                             </span>
                                         )}
                                     </div>
                                 )}
                                 {fixture.status === 'ht' && (
-                                    <span className="text-xs text-yellow-400 font-bold mt-1">HT</span>
+                                    <span className="text-xs text-yellow-600 dark:text-yellow-400 font-bold mt-1">HT</span>
                                 )}
                                 {fixture.penalties && (
-                                    <span className="text-xs text-gray-400 mt-0.5">
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                                         ({fixture.homePenScore}-{fixture.awayPenScore} pen)
                                     </span>
                                 )}
                             </>
                         ) : (
                             <>
-                                <span className="text-xl font-bold text-white">
+                                <span className="text-xl font-bold text-black dark:text-white">
                                     {formatKickoff(fixture.kickoffDateTime)}
                                 </span>
-                                <span className="text-xs text-gray-500 mt-0.5">
+                                <span className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
                                     {formatDate(fixture.kickoffDateTime)}
                                 </span>
                             </>
@@ -160,7 +160,7 @@ export default function FixtureCard({ fixture, onClick }: FixtureCardProps) {
                     {/* Away Team */}
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-end gap-2">
-                            <span className="text-white font-medium text-sm truncate text-right">
+                            <span className="text-black dark:text-white font-medium text-sm truncate text-right">
                                 {fixture.awayTeamName}
                             </span>
                             {fixture.awayTeamLogoUrl ? (
@@ -170,7 +170,7 @@ export default function FixtureCard({ fixture, onClick }: FixtureCardProps) {
                                     className="w-8 h-8 object-contain"
                                 />
                             ) : (
-                                <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-xs text-gray-400">
+                                <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-xs text-gray-500 dark:text-gray-400">
                                     {(fixture.awayTeamName || 'AW').substring(0, 2).toUpperCase()}
                                 </div>
                             )}
@@ -184,8 +184,8 @@ export default function FixtureCard({ fixture, onClick }: FixtureCardProps) {
                 </div>
 
                 {/* Bottom: Venue */}
-                <div className="mt-3 pt-2 border-t border-gray-800">
-                    <span className="text-xs text-gray-500 truncate block text-center">
+                <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-800">
+                    <span className="text-xs text-gray-500 dark:text-gray-500 truncate block text-center">
                         📍 {fixture.venue}
                     </span>
                 </div>
