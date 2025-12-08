@@ -1,6 +1,5 @@
-import { db } from '../../../firebase/config';
+import { getAdminDb } from '@/lib/firebaseAdmin';
 import Image from 'next/image';
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { notFound } from 'next/navigation';
 import CommentSection from '../../../components/CommentSection';
 import ShareButtons from '../../../components/ShareButtons';
@@ -54,25 +53,22 @@ export async function generateMetadata({ params }) {
   };
 }
 
-// Fetches a single story by its slug
+// Fetches a single story by its slug using Admin SDK
 async function getStory(slug) {
-  const postsCollection = collection(db, 'posts');
-  // Query for a published story with a matching slug
-  const q = query(
-    postsCollection,
-    where('slug', '==', slug),
-    where('status', '==', 'published')
-  );
-
   try {
-    const snapshot = await getDocs(q);
+    const db = getAdminDb();
+
+    // Query for a published story with a matching slug
+    const snapshot = await db.collection('posts')
+      .where('slug', '==', slug)
+      .where('status', '==', 'published')
+      .get();
 
     if (snapshot.empty) {
       // Try to find by document ID as fallback
-      const docRef = doc(db, 'posts', slug);
-      const docSnap = await getDoc(docRef);
+      const docSnap = await db.collection('posts').doc(slug).get();
 
-      if (!docSnap.exists() || docSnap.data().status !== 'published') {
+      if (!docSnap.exists || docSnap.data().status !== 'published') {
         return null;
       }
 
@@ -107,10 +103,12 @@ async function getStory(slug) {
 
 // Generates static paths for all published stories at build time
 export async function generateStaticParams() {
-  const postsCollection = collection(db, 'posts');
-  const q = query(postsCollection, where('status', '==', 'published'));
   try {
-    const snapshot = await getDocs(q);
+    const db = getAdminDb();
+    const snapshot = await db.collection('posts')
+      .where('status', '==', 'published')
+      .get();
+
     return snapshot.docs.map(doc => ({
       slug: doc.data().slug || doc.id, // Use document ID as fallback
     }));

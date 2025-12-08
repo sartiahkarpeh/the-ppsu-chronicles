@@ -1,20 +1,17 @@
-import { db } from '../../firebase/config';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebaseAdmin';
 import EventCard from '../../components/EventCard';
 
 export const revalidate = 60;
 
-// Fetches upcoming events
+// Fetches upcoming events using Admin SDK
 async function getUpcomingEvents() {
-    const upcomingEventsCollection = collection(db, 'upcomingEvents');
-    const q = query(
-        upcomingEventsCollection,
-        where('status', '==', 'published'),
-        orderBy('date', 'asc') // Show upcoming events in chronological order
-    );
-
     try {
-        const snapshot = await getDocs(q);
+        const db = getAdminDb();
+        const snapshot = await db.collection('upcomingEvents')
+            .where('status', '==', 'published')
+            .orderBy('date', 'asc')
+            .get();
+
         const events = snapshot.docs.map(doc => {
             const data = doc.data();
             return {
@@ -33,17 +30,15 @@ async function getUpcomingEvents() {
     }
 }
 
-// Fetches past events
+// Fetches past events using Admin SDK
 async function getPastEvents() {
-    const eventsCollection = collection(db, 'events');
-    const q = query(
-        eventsCollection,
-        where('status', '==', 'published'),
-        orderBy('date', 'desc') // Show most recent past events first
-    );
-
     try {
-        const snapshot = await getDocs(q);
+        const db = getAdminDb();
+        const snapshot = await db.collection('events')
+            .where('status', '==', 'published')
+            .orderBy('date', 'desc')
+            .get();
+
         const events = snapshot.docs.map(doc => {
             const data = doc.data();
             return {

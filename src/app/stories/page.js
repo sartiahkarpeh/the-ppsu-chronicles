@@ -1,21 +1,17 @@
-import { db } from '../../firebase/config';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebaseAdmin';
 import BlogPostCard from '../../components/BlogPostCard';
 
 export const revalidate = 60;
 
-// Fetches all published stories from Firestore
+// Fetches all published stories from Firestore using Admin SDK
 async function getStories() {
-  const postsCollection = collection(db, 'posts');
-  // Create a query to get only published stories, ordered by creation date
-  const q = query(
-    postsCollection,
-    where('status', '==', 'published'),
-    orderBy('createdAt', 'desc')
-  );
-
   try {
-    const storySnapshot = await getDocs(q);
+    const db = getAdminDb();
+    const storySnapshot = await db.collection('posts')
+      .where('status', '==', 'published')
+      .orderBy('createdAt', 'desc')
+      .get();
+
     // Process snapshot to format data for the component
     const stories = storySnapshot.docs.map(doc => {
       const data = doc.data();

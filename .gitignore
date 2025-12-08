@@ -39,4 +39,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-serviceAccountKey.jsonpublic/firebase-messaging-sw.js
+serviceAccountKey.json
+public/firebase-messaging-sw.js

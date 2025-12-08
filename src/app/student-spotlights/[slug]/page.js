@@ -1,7 +1,6 @@
 import Image from 'next/image';
 export const revalidate = 60;
-import { db } from '../../../firebase/config';
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
+import { getAdminDb } from '@/lib/firebaseAdmin';
 import { notFound } from 'next/navigation';
 import ShareButtons from '../../../components/ShareButtons';
 
@@ -52,23 +51,21 @@ export async function generateMetadata({ params }) {
     };
 }
 
-// Fetches a single spotlight by its slug
+// Fetches a single spotlight by its slug using Admin SDK
 async function getSpotlight(slug) {
-    const spotlightsCollection = collection(db, 'spotlights');
-    const q = query(
-        spotlightsCollection,
-        where('slug', '==', slug),
-        where('status', '==', 'published')
-    );
-
     try {
-        const snapshot = await getDocs(q);
+        const db = getAdminDb();
+
+        const snapshot = await db.collection('spotlights')
+            .where('slug', '==', slug)
+            .where('status', '==', 'published')
+            .get();
+
         if (snapshot.empty) {
             // Try to find by document ID as fallback
-            const docRef = doc(db, 'spotlights', slug);
-            const docSnap = await getDoc(docRef);
+            const docSnap = await db.collection('spotlights').doc(slug).get();
 
-            if (!docSnap.exists() || docSnap.data().status !== 'published') {
+            if (!docSnap.exists || docSnap.data().status !== 'published') {
                 return null;
             }
 
@@ -94,10 +91,12 @@ async function getSpotlight(slug) {
 
 // Generates static paths for all published spotlights
 export async function generateStaticParams() {
-    const spotlightsCollection = collection(db, 'spotlights');
-    const q = query(spotlightsCollection, where('status', '==', 'published'));
     try {
-        const snapshot = await getDocs(q);
+        const db = getAdminDb();
+        const snapshot = await db.collection('spotlights')
+            .where('status', '==', 'published')
+            .get();
+
         return snapshot.docs.map(doc => ({
             slug: doc.data().slug || doc.id, // Use document ID as fallback
         }));
@@ -134,13 +133,13 @@ export default async function StudentSpotlightPage({ params }) {
                             &quot;{spotlight.quote}&quot;
                         </blockquote>
                         <div className="mt-6 prose max-w-none text-gray-700 whitespace-pre-wrap">{spotlight.content}</div>
-                        
+
                         {/* Share Section */}
                         <div className="mt-8 pt-6 border-t border-gray-200">
                             <span className="text-sm text-gray-500 font-semibold block mb-3">Share this spotlight:</span>
-                            <ShareButtons 
-                                title={`${spotlight.studentName} - Student Spotlight`} 
-                                description={spotlight.bio?.substring(0, 160) || spotlight.content?.substring(0, 160)} 
+                            <ShareButtons
+                                title={`${spotlight.studentName} - Student Spotlight`}
+                                description={spotlight.bio?.substring(0, 160) || spotlight.content?.substring(0, 160)}
                             />
                         </div>
                     </div>
