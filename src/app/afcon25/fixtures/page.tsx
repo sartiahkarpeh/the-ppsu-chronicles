@@ -212,52 +212,17 @@ export default function FixturesListPage() {
         {/* Coming Soon Content */}
         <main className="max-w-7xl mx-auto px-4 py-8 md:py-12">
           <div className="flex flex-col items-center justify-center py-8 md:py-16">
-            {/* Countdown Timer */}
-            {timeLeft && (
-              <div className="mb-8">
-                <p className="text-center text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wider mb-4">
-                  Fixtures Available After Draw
-                </p>
-                <div className="flex items-center gap-3 md:gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-900 dark:bg-gray-800 rounded-xl flex items-center justify-center shadow-lg border border-gray-700">
-                      <span className="text-2xl md:text-3xl font-bold text-white font-display">
-                        {String(timeLeft.hours).padStart(2, '0')}
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-2 uppercase">Hours</span>
-                  </div>
-                  <span className="text-2xl md:text-3xl font-bold text-gray-400 mb-6">:</span>
-                  <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-900 dark:bg-gray-800 rounded-xl flex items-center justify-center shadow-lg border border-gray-700">
-                      <span className="text-2xl md:text-3xl font-bold text-white font-display">
-                        {String(timeLeft.minutes).padStart(2, '0')}
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-2 uppercase">Minutes</span>
-                  </div>
-                  <span className="text-2xl md:text-3xl font-bold text-gray-400 mb-6">:</span>
-                  <div className="flex flex-col items-center">
-                    <div className="w-16 h-16 md:w-20 md:h-20 bg-afcon-green rounded-xl flex items-center justify-center shadow-lg">
-                      <span className="text-2xl md:text-3xl font-bold text-black font-display">
-                        {String(timeLeft.seconds).padStart(2, '0')}
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-2 uppercase">Seconds</span>
-                  </div>
-                </div>
-                <p className="text-center text-afcon-gold text-sm font-medium mt-4">
-                  Today at 9:00 PM
-                </p>
-              </div>
-            )}
+            {/* Calendar Icon */}
+            <div className="mb-6 w-24 h-24 bg-gradient-to-br from-afcon-green to-afcon-gold rounded-full flex items-center justify-center">
+              <Calendar className="w-12 h-12 text-black" />
+            </div>
 
             <h2 className="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-white text-center mb-3">
               Fixtures Coming Soon
             </h2>
             <p className="text-base text-gray-600 dark:text-gray-400 text-center max-w-md mb-6">
-              Match fixtures will be available after the group stage draw is announced.
-              Check back after the draw to see the match schedule!
+              The draw has been completed! Match fixtures will be announced shortly.
+              Stay tuned for the complete match schedule!
             </p>
 
             <Link
