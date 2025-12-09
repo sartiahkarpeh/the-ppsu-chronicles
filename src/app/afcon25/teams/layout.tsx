@@ -10,7 +10,7 @@ export const metadata: Metadata = {
         siteName: 'The PPSU Chronicles',
         images: [
             {
-                url: '/images/afcon.jpeg',
+                url: 'https://www.theppsuchronicles.com/images/afcon.jpeg',
                 width: 1200,
                 height: 630,
                 alt: 'AFCON 2025 Teams',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
         card: 'summary_large_image',
         title: 'AFCON 2025 Teams',
         description: 'Meet the teams competing in AFCON 2025 at PPSU!',
-        images: ['/images/afcon.jpeg'],
+        images: ['https://www.theppsuchronicles.com/images/afcon.jpeg'],
     },
 };
 

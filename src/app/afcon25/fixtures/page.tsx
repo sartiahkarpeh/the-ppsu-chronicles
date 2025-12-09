@@ -2,20 +2,22 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import type { Fixture } from '@/types/fixtureTypes';
 import type { Team } from '@/types/afcon';
 import FixtureCard from '@/components/afcon/FixtureCard';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Calendar, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import dayjs from 'dayjs';
 
-type FilterType = 'all' | 'today' | 'live' | 'finished';
+type FilterType = 'all' | 'today' | 'live' | 'scheduled' | 'finished';
 
 const filterOptions: { id: FilterType; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'today', label: 'Today' },
   { id: 'live', label: 'Live' },
+  { id: 'scheduled', label: 'Scheduled' },
   { id: 'finished', label: 'Finished' },
 ];
 
@@ -25,6 +27,56 @@ export default function FixturesListPage() {
   const [filteredFixtures, setFilteredFixtures] = useState<Fixture[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+  const [isDrawPublished, setIsDrawPublished] = useState(false);
+  const [timeLeft, setTimeLeft] = useState<{ hours: number; minutes: number; seconds: number } | null>(null);
+
+  // Check draw publish status
+  useEffect(() => {
+    const checkPublishStatus = async () => {
+      try {
+        const settingsDoc = await getDoc(doc(db, 'afcon_settings', 'draw'));
+        if (settingsDoc.exists()) {
+          setIsDrawPublished(settingsDoc.data()?.isPublished || false);
+        }
+      } catch (error) {
+        console.error('Error checking draw status:', error);
+      }
+    };
+    checkPublishStatus();
+  }, []);
+
+  // Countdown timer to 9PM today
+  useEffect(() => {
+    if (isDrawPublished) {
+      setTimeLeft(null);
+      return;
+    }
+
+    const calculateTimeLeft = () => {
+      const now = new Date();
+      const target = new Date();
+      target.setHours(21, 0, 0, 0); // 9PM today
+
+      if (now >= target) {
+        return { hours: 0, minutes: 0, seconds: 0 };
+      }
+
+      const diff = target.getTime() - now.getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      return { hours, minutes, seconds };
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const timer = setInterval(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isDrawPublished]);
 
   // Fetch teams first
   useEffect(() => {
@@ -84,6 +136,9 @@ export default function FixturesListPage() {
       case 'live':
         filtered = fixtures.filter(f => f.status === 'live' || f.status === 'ht');
         break;
+      case 'scheduled':
+        filtered = fixtures.filter(f => f.status === 'scheduled' || f.status === 'upcoming' || !f.status);
+        break;
       case 'finished':
         filtered = fixtures.filter(f => f.status === 'ft');
         break;
@@ -118,12 +173,120 @@ export default function FixturesListPage() {
     return date.format('dddd, MMMM D');
   };
 
+  // Get scheduled count for badge
+  const scheduledCount = fixtures.filter(f => f.status === 'scheduled' || f.status === 'upcoming' || !f.status).length;
+
+  // Show countdown when draw is not published
+  if (!loading && !isDrawPublished) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-black">
+        {/* Hero Section */}
+        <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-800 overflow-hidden">
+          <div className="absolute inset-0 bg-[url('/afcon-pattern.svg')] opacity-5"></div>
+          <div className="absolute top-0 left-1/4 w-64 h-64 bg-afcon-green/20 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-afcon-gold/20 rounded-full blur-3xl"></div>
+
+          <div className="relative max-w-7xl mx-auto px-4 py-6 md:py-10">
+            <Link
+              href="/afcon25"
+              className="inline-flex items-center gap-2 text-white/60 hover:text-white mb-4 md:mb-6 transition-colors text-sm"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to AFCON 2025
+            </Link>
+
+            <div className="flex flex-col items-center text-center">
+              <div className="p-3 bg-afcon-green/10 backdrop-blur-sm border border-afcon-green/20 rounded-xl mb-3">
+                <Calendar className="w-8 h-8 md:w-10 md:h-10 text-afcon-green" />
+              </div>
+              <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-display font-bold text-white uppercase tracking-wider mb-2">
+                Fixtures
+              </h1>
+              <p className="text-base md:text-xl text-afcon-gold font-medium">
+                AFCON 2025 Match Schedule
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Coming Soon Content */}
+        <main className="max-w-7xl mx-auto px-4 py-8 md:py-12">
+          <div className="flex flex-col items-center justify-center py-8 md:py-16">
+            {/* Countdown Timer */}
+            {timeLeft && (
+              <div className="mb-8">
+                <p className="text-center text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wider mb-4">
+                  Fixtures Available After Draw
+                </p>
+                <div className="flex items-center gap-3 md:gap-4">
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-900 dark:bg-gray-800 rounded-xl flex items-center justify-center shadow-lg border border-gray-700">
+                      <span className="text-2xl md:text-3xl font-bold text-white font-display">
+                        {String(timeLeft.hours).padStart(2, '0')}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-2 uppercase">Hours</span>
+                  </div>
+                  <span className="text-2xl md:text-3xl font-bold text-gray-400 mb-6">:</span>
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-900 dark:bg-gray-800 rounded-xl flex items-center justify-center shadow-lg border border-gray-700">
+                      <span className="text-2xl md:text-3xl font-bold text-white font-display">
+                        {String(timeLeft.minutes).padStart(2, '0')}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-2 uppercase">Minutes</span>
+                  </div>
+                  <span className="text-2xl md:text-3xl font-bold text-gray-400 mb-6">:</span>
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 md:w-20 md:h-20 bg-afcon-green rounded-xl flex items-center justify-center shadow-lg">
+                      <span className="text-2xl md:text-3xl font-bold text-black font-display">
+                        {String(timeLeft.seconds).padStart(2, '0')}
+                      </span>
+                    </div>
+                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-2 uppercase">Seconds</span>
+                  </div>
+                </div>
+                <p className="text-center text-afcon-gold text-sm font-medium mt-4">
+                  Today at 9:00 PM
+                </p>
+              </div>
+            )}
+
+            <h2 className="text-2xl md:text-3xl font-display font-bold text-gray-900 dark:text-white text-center mb-3">
+              Fixtures Coming Soon
+            </h2>
+            <p className="text-base text-gray-600 dark:text-gray-400 text-center max-w-md mb-6">
+              Match fixtures will be available after the group stage draw is announced.
+              Check back after the draw to see the match schedule!
+            </p>
+
+            <Link
+              href="/afcon25"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-afcon-green text-black font-bold rounded-xl hover:bg-afcon-green/90 transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Back to AFCON 2025
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f13]">
       {/* Sticky Header */}
       <div className="sticky top-0 z-40 bg-white/95 dark:bg-[#0f0f13]/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-800/50">
         <div className="px-4 py-4">
-          <h1 className="text-xl font-bold text-black dark:text-white mb-4">AFCON 25 Fixtures</h1>
+          <div className="flex items-center gap-3 mb-4">
+            <Link
+              href="/afcon25"
+              className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <h1 className="text-xl font-bold text-black dark:text-white">AFCON 25 Fixtures</h1>
+          </div>
 
           {/* Filter Pills - Horizontal Scroll */}
           <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-4 px-4">
@@ -140,6 +303,9 @@ export default function FixturesListPage() {
                 {filter.label}
                 {filter.id === 'live' && fixtures.some(f => f.status === 'live') && (
                   <span className="ml-2 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse" />
+                )}
+                {filter.id === 'scheduled' && scheduledCount > 0 && (
+                  <span className="ml-2 px-1.5 py-0.5 bg-blue-500 text-white text-xs rounded-full">{scheduledCount}</span>
                 )}
               </motion.button>
             ))}
@@ -162,7 +328,9 @@ export default function FixturesListPage() {
             <p className="text-gray-500 dark:text-gray-500 text-sm">
               {activeFilter === 'all'
                 ? 'No fixtures have been added yet'
-                : `No ${activeFilter} matches at the moment`}
+                : activeFilter === 'scheduled'
+                  ? 'No scheduled matches at the moment'
+                  : `No ${activeFilter} matches at the moment`}
             </p>
           </div>
         ) : (

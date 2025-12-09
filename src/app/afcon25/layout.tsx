@@ -13,7 +13,7 @@ export const metadata: Metadata = {
         siteName: 'The PPSU Chronicles',
         images: [
             {
-                url: '/images/afcon.jpeg',
+                url: 'https://www.theppsuchronicles.com/images/afcon.jpeg',
                 width: 1200,
                 height: 630,
                 alt: 'AFCON 2025 at P. P. Savani University',
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
         card: 'summary_large_image',
         title: 'AFCON 2025 at PPSU',
         description: 'Follow all the happenings of AFCON 2025 at P. P. Savani University!',
-        images: ['/images/afcon.jpeg'],
+        images: ['https://www.theppsuchronicles.com/images/afcon.jpeg'],
     },
 };
 
