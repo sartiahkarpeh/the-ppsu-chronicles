@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, Trophy, Users, Film, Settings, LayoutDashboard, ArrowLeft } from 'lucide-react';
+import { Calendar, Trophy, Users, Film, Settings, LayoutDashboard, ArrowLeft, Shuffle } from 'lucide-react';
 
 export default function AFCONAdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -14,6 +14,7 @@ export default function AFCONAdminLayout({ children }: { children: React.ReactNo
         { name: 'Dashboard', href: '/admin/afcon25', icon: LayoutDashboard },
         { name: 'Fixtures', href: '/admin/afcon25/fixtures', icon: Calendar },
         { name: 'Standings', href: '/admin/afcon25/standings', icon: Trophy },
+        { name: 'Draw', href: '/admin/afcon25/draw', icon: Shuffle },
         { name: 'Teams', href: '/admin/afcon25/teams', icon: Users },
         { name: 'Highlights', href: '/admin/afcon25/highlights', icon: Film },
         { name: 'Settings', href: '/admin/afcon25/settings', icon: Settings },

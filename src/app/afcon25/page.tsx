@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, Trophy, CalendarOff } from 'lucide-react';
+import { Calendar, Trophy, CalendarOff, Shuffle } from 'lucide-react';
 import HeroSection from '@/components/afcon/HeroSection';
 import StatsRow from '@/components/afcon/StatsRow';
 import NavCards from '@/components/afcon/NavCards';
@@ -67,6 +67,13 @@ export default function AFCON25Page() {
         >
           <span className="font-display uppercase tracking-wider">Team Standings</span>
           <Trophy className="w-5 h-5" />
+        </Link>
+        <Link
+          href="/afcon25/draw"
+          className="group w-full sm:w-auto min-w-[200px] px-8 py-4 bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white font-bold text-lg rounded-xl border border-gray-200 dark:border-white/10 hover:border-afcon-gold transition-all hover:shadow-lg hover:-translate-y-1 text-center flex items-center justify-center gap-3"
+        >
+          <span className="font-display uppercase tracking-wider">Draw</span>
+          <Shuffle className="w-5 h-5" />
         </Link>
       </div>
 
