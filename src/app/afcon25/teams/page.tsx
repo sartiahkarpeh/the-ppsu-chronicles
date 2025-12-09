@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { X, Users, Trophy, User, Calendar } from 'lucide-react';
-import SectionHeader from '@/components/afcon/SectionHeader';
+import { X, Users, Trophy, User, Calendar, ArrowLeft } from 'lucide-react';
 import { getTeams } from '@/lib/afcon/firestore';
 import type { Team } from '@/types/afcon';
 
@@ -16,7 +15,6 @@ export default function TeamsPage() {
     const fetchTeams = async () => {
       try {
         const data = await getTeams();
-        // Sort teams alphabetically
         const sorted = data.sort((a, b) => a.name.localeCompare(b.name));
         setTeams(sorted);
       } catch (error) {
@@ -31,30 +29,45 @@ export default function TeamsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-afcon-black flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-afcon-gold border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center">
+        <div className="w-16 h-16 border-4 border-afcon-green border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-afcon-black py-12 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-12">
+    <div className="min-h-screen bg-gray-50 dark:bg-black">
+      {/* Hero Section */}
+      <div className="relative bg-gradient-to-br from-gray-900 via-black to-gray-800 overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/afcon-pattern.svg')] opacity-5"></div>
+        <div className="absolute top-0 left-1/4 w-64 h-64 bg-afcon-green/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-afcon-gold/20 rounded-full blur-3xl"></div>
+
+        <div className="relative max-w-7xl mx-auto px-4 py-6 md:py-10">
           <Link
             href="/afcon25"
-            className="text-afcon-green dark:text-afcon-gold hover:underline mb-4 inline-block font-bold"
+            className="inline-flex items-center gap-2 text-white/60 hover:text-white mb-4 md:mb-6 transition-colors text-sm"
           >
-            ← Back to AFCON 2025
+            <ArrowLeft className="w-4 h-4" />
+            Back to AFCON 2025
           </Link>
-          <SectionHeader
-            title="Participating Teams"
-            subtitle={`${teams.length} teams competing for glory`}
-          />
-        </div>
 
-        {/* Teams Grid */}
+          <div className="flex flex-col items-center text-center">
+            <div className="p-3 bg-afcon-green/10 backdrop-blur-sm border border-afcon-green/20 rounded-xl mb-3">
+              <Users className="w-8 h-8 md:w-10 md:h-10 text-afcon-green" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-display font-bold text-white uppercase tracking-wider mb-2">
+              Participating Teams
+            </h1>
+            <p className="text-base md:text-xl text-afcon-gold font-medium">
+              {teams.length} Teams Competing for Glory
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Teams Grid */}
+      <main className="max-w-7xl mx-auto px-4 py-8 md:py-12">
         {teams.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {teams.map(team => (
@@ -112,7 +125,10 @@ export default function TeamsPage() {
           </div>
         ) : (
           <div className="text-center py-24 bg-white dark:bg-white/5 rounded-2xl border border-gray-200 dark:border-white/10">
-            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+            <div className="mb-6 inline-flex items-center justify-center w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full">
+              <Users className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
               No Teams Yet
             </h3>
             <p className="text-gray-500 dark:text-gray-400">
@@ -120,7 +136,7 @@ export default function TeamsPage() {
             </p>
           </div>
         )}
-      </div>
+      </main>
 
       {/* Team Detail Modal */}
       {selectedTeam && (
