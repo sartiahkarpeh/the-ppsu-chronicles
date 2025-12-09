@@ -10,7 +10,7 @@ export const metadata: Metadata = {
         siteName: 'The PPSU Chronicles',
         images: [
             {
-                url: 'https://www.theppsuchronicles.com/images/afcon.jpeg',
+                url: 'https://www.theppsuchronicles.com/afcon.jpeg',
                 width: 1200,
                 height: 630,
                 alt: 'AFCON 2025 Tournament Draw',
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
         card: 'summary_large_image',
         title: 'AFCON 2025 Tournament Draw',
         description: 'Check out the official AFCON 2025 group stage draw at PPSU!',
-        images: ['https://www.theppsuchronicles.com/images/afcon.jpeg'],
+        images: ['https://www.theppsuchronicles.com/afcon.jpeg'],
     },
 };
 
