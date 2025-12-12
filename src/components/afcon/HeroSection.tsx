@@ -1,5 +1,3 @@
-import Countdown from './Countdown';
-
 export default function HeroSection() {
   return (
     <div className="relative h-[60vh] md:h-[80vh] w-full bg-black overflow-hidden">
@@ -11,13 +9,6 @@ export default function HeroSection() {
 
       {/* Dark gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-black/90"></div>
-
-      {/* Content Overlay */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center z-10 px-4">
-
-
-        <Countdown />
-      </div>
     </div>
   );
 }

@@ -11,12 +11,14 @@ import dayjs from 'dayjs';
 
 import { useLiveClock } from '@/hooks/useLiveClock';
 import { useNotificationSubscription } from '@/hooks/useNotificationSubscription';
+import { useNotificationPrompt } from '@/hooks/useNotificationPrompt';
 import type { Fixture, FixtureStatusType } from '@/types/fixtureTypes';
 import type { Team, TeamStanding } from '@/types/afcon';
 import FormDots from '@/components/afcon/FormDots';
 import ShareSheet from '@/components/afcon/ShareSheet';
 import Toast from '@/components/afcon/Toast';
 import NotificationBell from '@/components/afcon/NotificationBell';
+import NotificationPrompt from '@/components/afcon/NotificationPrompt';
 import { LiveStream } from '@/components/afcon/LiveStream';
 
 type EventType = 'goal' | 'yellow' | 'red' | 'sub' | 'var' | 'injury' | 'penalty_scored' | 'penalty_missed' | 'own_goal';
@@ -183,6 +185,15 @@ export default function FixtureDetailPage({
         isLoading: subscriptionLoading,
         toggle: toggleSubscription,
     } = useNotificationSubscription(fixture?.id || null);
+
+    // Notification prompt hook for auto-prompting on page load
+    const {
+        shouldShowPrompt,
+        isLoading: promptLoading,
+        enableNotifications,
+        dismissPrompt,
+        neverAskAgain,
+    } = useNotificationPrompt(fixture?.id || null);
 
     const handleShare = async () => {
         // Use slug for SEO-friendly URLs, fallback to ID
@@ -734,6 +745,17 @@ export default function FixtureDetailPage({
                     onClose={() => setToast(null)}
                 />
             )}
+
+            {/* Notification Permission Prompt */}
+            <NotificationPrompt
+                isVisible={shouldShowPrompt}
+                isLoading={promptLoading}
+                onEnable={enableNotifications}
+                onDismiss={dismissPrompt}
+                onNeverAsk={neverAskAgain}
+                homeTeam={fixture.homeTeamName}
+                awayTeam={fixture.awayTeamName}
+            />
         </div>
     );
 }
