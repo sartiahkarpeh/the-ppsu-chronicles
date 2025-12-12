@@ -17,6 +17,7 @@ import FormDots from '@/components/afcon/FormDots';
 import ShareSheet from '@/components/afcon/ShareSheet';
 import Toast from '@/components/afcon/Toast';
 import NotificationBell from '@/components/afcon/NotificationBell';
+import { LiveStream } from '@/components/afcon/LiveStream';
 
 type EventType = 'goal' | 'yellow' | 'red' | 'sub' | 'var' | 'injury' | 'penalty_scored' | 'penalty_missed' | 'own_goal';
 
@@ -325,12 +326,29 @@ export default function FixtureDetailPage({
                 </div>
             </div>
 
+            {/* Live Stream - Shows when broadcasting */}
+            {(isLive || isHT) && (
+                <div className="mx-4 -mt-[100px] mb-4 relative z-10">
+                    <LiveStream
+                        fixtureId={fixture.id}
+                        homeTeamName={fixture.homeTeamName}
+                        awayTeamName={fixture.awayTeamName}
+                        homeTeamLogo={fixture.homeTeamLogoUrl}
+                        awayTeamLogo={fixture.awayTeamLogoUrl}
+                        homeScore={fixture.homeScore}
+                        awayScore={fixture.awayScore}
+                        matchTime={displayTime}
+                        showOverlay={true}
+                    />
+                </div>
+            )}
+
             {/* Main Match Card */}
             <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
-                className="mx-4 -mt-[120px] relative z-10"
+                className={`mx-4 ${(isLive || isHT) ? '' : '-mt-[120px]'} relative z-10`}
             >
                 <div className="bg-white dark:bg-gray-900/90 backdrop-blur-lg rounded-3xl p-6 border border-gray-200 dark:border-gray-800 shadow-xl">
                     {/* Teams and Score/Time */}

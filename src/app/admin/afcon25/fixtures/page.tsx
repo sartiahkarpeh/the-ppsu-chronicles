@@ -11,6 +11,7 @@ import {
     Play,
     Clock,
     CheckCircle,
+    Video,
 } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, Timestamp, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/config';
@@ -288,6 +289,18 @@ export default function AdminFixturesPage() {
 
                                         {/* Action Buttons */}
                                         <div className="flex items-center gap-2">
+                                            {/* Stream Control Button - for live matches */}
+                                            {(fixture.status === 'live' || fixture.status === 'ht') && (
+                                                <button
+                                                    onClick={() =>
+                                                        router.push(`/admin/afcon25/broadcast/${fixture.id}`)
+                                                    }
+                                                    className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-xs font-medium flex items-center gap-1"
+                                                >
+                                                    <Video className="w-3 h-3" />
+                                                    Stream
+                                                </button>
+                                            )}
                                             {/* Live Control Button */}
                                             {fixture.status === 'live' || fixture.status === 'ht' ? (
                                                 <button

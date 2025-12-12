@@ -3,48 +3,78 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Calendar, Trophy, CalendarOff, Shuffle } from 'lucide-react';
+import { collection, query, orderBy, onSnapshot, getDocs, doc, getDoc } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 import HeroSection from '@/components/afcon/HeroSection';
 import StatsRow from '@/components/afcon/StatsRow';
 import NavCards from '@/components/afcon/NavCards';
-import MatchCard from '@/components/afcon/MatchCard';
-import { subscribeToMatches, getTeam } from '@/lib/afcon/firestore';
-import type { Match, Team } from '@/types/afcon';
+import FixtureCard from '@/components/afcon/FixtureCard';
+import type { Fixture } from '@/types/fixtureTypes';
+import type { Team } from '@/types/afcon';
 
 export default function AFCON25Page() {
-  const [upcomingMatches, setUpcomingMatches] = useState<Match[]>([]);
-  const [teams, setTeams] = useState<Record<string, Team>>({});
+  const [upcomingFixtures, setUpcomingFixtures] = useState<Fixture[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = subscribeToMatches(async (matches) => {
-      // Filter for scheduled matches and sort by kickoff time
-      const scheduled = matches
-        .filter(m => m.status === 'scheduled')
-        .sort((a, b) => new Date(a.kickoffUTC).getTime() - new Date(b.kickoffUTC).getTime())
-        .slice(0, 6); // Show first 6 upcoming matches
+    // Fetch teams first
+    const fetchData = async () => {
+      try {
+        // Get teams
+        const teamsQuery = query(collection(db, 'afcon_teams'), orderBy('name'));
+        const teamsSnapshot = await getDocs(teamsQuery);
+        const teamsMap = new Map<string, Team>();
+        teamsSnapshot.docs.forEach(doc => {
+          teamsMap.set(doc.id, { id: doc.id, ...doc.data() } as Team);
+        });
 
-      setUpcomingMatches(scheduled);
+        // Subscribe to fixtures
+        const fixturesQuery = query(collection(db, 'fixtures'), orderBy('kickoffDateTime', 'asc'));
 
-      // Fetch teams for all matches
-      const teamIds = new Set<string>();
-      scheduled.forEach(match => {
-        teamIds.add(match.homeTeamId);
-        teamIds.add(match.awayTeamId);
-      });
+        const unsubscribe = onSnapshot(fixturesQuery, (snapshot) => {
+          const fixturesData = snapshot.docs.map(doc => {
+            const data = doc.data();
+            const homeTeam = teamsMap.get(data.homeTeamId);
+            const awayTeam = teamsMap.get(data.awayTeamId);
 
-      const teamsData: Record<string, Team> = {};
-      await Promise.all(
-        Array.from(teamIds).map(async (id) => {
-          const team = await getTeam(id);
-          if (team) teamsData[id] = team;
-        })
-      );
+            return {
+              id: doc.id,
+              ...data,
+              homeTeamName: homeTeam?.name || 'TBD',
+              homeTeamLogoUrl: homeTeam?.flag_url || homeTeam?.crest_url || '',
+              awayTeamName: awayTeam?.name || 'TBD',
+              awayTeamLogoUrl: awayTeam?.flag_url || awayTeam?.crest_url || '',
+            } as Fixture;
+          });
 
-      setTeams(teamsData);
-      setLoading(false);
+          // Filter for scheduled/upcoming matches and take first 6
+          // Cast status to any to handle potential string values from Firestore
+          const scheduled = fixturesData
+            .filter(f => {
+              const status = (f.status as any) || '';
+              return status === 'scheduled' || status === 'upcoming' || status === '';
+            })
+            .slice(0, 6);
+
+          setUpcomingFixtures(scheduled);
+          setLoading(false);
+        });
+
+        return unsubscribe;
+      } catch (error) {
+        console.error('Error fetching fixtures:', error);
+        setLoading(false);
+      }
+    };
+
+    let unsubscribe: (() => void) | undefined;
+    fetchData().then(unsub => {
+      unsubscribe = unsub;
     });
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   return (
@@ -91,7 +121,7 @@ export default function AFCON25Page() {
                 Upcoming Matches
               </h2>
             </div>
-            {upcomingMatches.length > 0 && (
+            {upcomingFixtures.length > 0 && (
               <Link
                 href="/afcon25/fixtures"
                 className="text-afcon-green dark:text-afcon-gold hover:underline font-bold"
@@ -110,15 +140,12 @@ export default function AFCON25Page() {
                 </div>
               ))}
             </div>
-          ) : upcomingMatches.length > 0 ? (
+          ) : upcomingFixtures.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {upcomingMatches.map(match => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  homeTeam={teams[match.homeTeamId]}
-                  awayTeam={teams[match.awayTeamId]}
-                  showVenue={false}
+              {upcomingFixtures.map(fixture => (
+                <FixtureCard
+                  key={fixture.id}
+                  fixture={fixture}
                 />
               ))}
             </div>
