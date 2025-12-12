@@ -24,7 +24,7 @@ export interface UseNotificationPromptReturn {
  */
 export function useNotificationPrompt(fixtureId: string | null): UseNotificationPromptReturn {
     const [shouldShowPrompt, setShouldShowPrompt] = useState(false);
-    const [hasInitialized, setHasInitialized] = useState(false);
+    const [hasCheckedPrompt, setHasCheckedPrompt] = useState(false);
 
     const {
         isSupported,
@@ -39,67 +39,86 @@ export function useNotificationPrompt(fixtureId: string | null): UseNotification
         subscribe,
     } = useNotificationSubscription(fixtureId);
 
-    // Check if we should show the prompt
+    // Check if we should show the prompt - wait for hooks to initialize
     useEffect(() => {
         if (typeof window === 'undefined' || !fixtureId) return;
 
-        // Delay to let the page render first
+        // Wait for subscription loading to finish
+        if (subscriptionLoading) return;
+
+        // Set a timer for the prompt delay
         const timer = setTimeout(() => {
             // Don't show if already subscribed
             if (isSubscribed) {
                 setShouldShowPrompt(false);
-                setHasInitialized(true);
+                setHasCheckedPrompt(true);
                 return;
             }
 
             // Don't show if user said never ask again
-            if (localStorage.getItem(PROMPT_NEVER_ASK_KEY) === 'true') {
+            try {
+                if (localStorage.getItem(PROMPT_NEVER_ASK_KEY) === 'true') {
+                    setShouldShowPrompt(false);
+                    setHasCheckedPrompt(true);
+                    return;
+                }
+            } catch (e) {
+                // localStorage might not be available
+            }
+
+            // Check browser support
+            const browserSupported = typeof window !== 'undefined' &&
+                'Notification' in window &&
+                'serviceWorker' in navigator;
+
+            if (!browserSupported) {
+                console.log('Browser does not support notifications');
                 setShouldShowPrompt(false);
-                setHasInitialized(true);
+                setHasCheckedPrompt(true);
                 return;
             }
 
-            // Don't show if already granted permission (they're good!)
-            if (permission === 'granted') {
+            // Get current permission status
+            const currentPermission = Notification.permission;
+
+            // Don't show if already granted (they're good!)
+            if (currentPermission === 'granted') {
                 setShouldShowPrompt(false);
-                setHasInitialized(true);
+                setHasCheckedPrompt(true);
                 return;
             }
 
             // Don't show if permission was denied (browser will block anyway)
-            if (permission === 'denied') {
+            if (currentPermission === 'denied') {
                 setShouldShowPrompt(false);
-                setHasInitialized(true);
+                setHasCheckedPrompt(true);
                 return;
             }
 
-            // Don't show if not supported
-            if (!isSupported) {
-                setShouldShowPrompt(false);
-                setHasInitialized(true);
-                return;
-            }
-
-            // Check if dismissed recently (within last session)
-            const dismissedTime = localStorage.getItem(PROMPT_DISMISSED_KEY);
-            if (dismissedTime) {
-                const dismissedDate = new Date(parseInt(dismissedTime));
-                const hoursSinceDismissed = (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60);
-                // Don't show for 24 hours after dismissing
-                if (hoursSinceDismissed < 24) {
-                    setShouldShowPrompt(false);
-                    setHasInitialized(true);
-                    return;
+            // Check if dismissed recently (within last 24 hours)
+            try {
+                const dismissedTime = localStorage.getItem(PROMPT_DISMISSED_KEY);
+                if (dismissedTime) {
+                    const dismissedDate = new Date(parseInt(dismissedTime));
+                    const hoursSinceDismissed = (Date.now() - dismissedDate.getTime()) / (1000 * 60 * 60);
+                    if (hoursSinceDismissed < 24) {
+                        setShouldShowPrompt(false);
+                        setHasCheckedPrompt(true);
+                        return;
+                    }
                 }
+            } catch (e) {
+                // localStorage might not be available
             }
 
             // Show the prompt!
+            console.log('Showing notification prompt');
             setShouldShowPrompt(true);
-            setHasInitialized(true);
+            setHasCheckedPrompt(true);
         }, 2500); // 2.5 second delay for better UX
 
         return () => clearTimeout(timer);
-    }, [fixtureId, isSubscribed, permission, isSupported]);
+    }, [fixtureId, isSubscribed, subscriptionLoading]);
 
     // Enable notifications: request permission and subscribe
     const enableNotifications = useCallback(async (): Promise<boolean> => {
@@ -124,17 +143,25 @@ export function useNotificationPrompt(fixtureId: string | null): UseNotification
     // Dismiss for now (can show again next session)
     const dismissPrompt = useCallback(() => {
         setShouldShowPrompt(false);
-        localStorage.setItem(PROMPT_DISMISSED_KEY, Date.now().toString());
+        try {
+            localStorage.setItem(PROMPT_DISMISSED_KEY, Date.now().toString());
+        } catch (e) {
+            // localStorage might not be available
+        }
     }, []);
 
     // Never ask again
     const neverAskAgain = useCallback(() => {
         setShouldShowPrompt(false);
-        localStorage.setItem(PROMPT_NEVER_ASK_KEY, 'true');
+        try {
+            localStorage.setItem(PROMPT_NEVER_ASK_KEY, 'true');
+        } catch (e) {
+            // localStorage might not be available
+        }
     }, []);
 
     return {
-        shouldShowPrompt: hasInitialized && shouldShowPrompt,
+        shouldShowPrompt: hasCheckedPrompt && shouldShowPrompt,
         isLoading: pushLoading || subscriptionLoading,
         isSupported,
         permission,
@@ -145,3 +172,4 @@ export function useNotificationPrompt(fixtureId: string | null): UseNotification
 }
 
 export default useNotificationPrompt;
+
