@@ -209,7 +209,7 @@ export class WebRTCManager {
     }
 
     // Camera: Listen for answers and viewer requests
-    listenForAnswers(): void {
+    listenForAnswers(onZoomCommand?: (level: number) => void): void {
         if (!this.cameraId) return;
 
         console.log(`[Camera${this.cameraId}] Starting to listen for answers and viewer requests`);
@@ -255,6 +255,14 @@ export class WebRTCManager {
                             // Public viewer is requesting a stream - send them an offer
                             console.log(`[Camera${this.cameraId}] Handling viewer-request from ${message.from}`);
                             await this.handleViewerRequest(message);
+                            await deleteDoc(change.doc.ref);
+                        } else if (message.type === 'zoom-command') {
+                            // Remote zoom control from admin
+                            const payload = message.payload as { zoomLevel: number } | undefined;
+                            if (payload?.zoomLevel && onZoomCommand) {
+                                console.log(`[Camera${this.cameraId}] Received zoom command: ${payload.zoomLevel}x`);
+                                onZoomCommand(payload.zoomLevel);
+                            }
                             await deleteDoc(change.doc.ref);
                         }
                     }

@@ -184,8 +184,11 @@ export function useWebRTCCamera(options: UseCameraStreamOptions) {
             // Create offer and start streaming
             await managerRef.current.createOffer();
 
-            // Listen for answers
-            managerRef.current.listenForAnswers();
+            // Listen for answers and remote zoom commands
+            managerRef.current.listenForAnswers((zoomLevel) => {
+                // Handle remote zoom command from admin
+                setZoom(zoomLevel);
+            });
 
             setState(prev => ({
                 ...prev,

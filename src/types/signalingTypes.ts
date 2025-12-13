@@ -9,7 +9,7 @@ export interface CameraConnection {
 }
 
 export interface SignalingMessage {
-    type: 'offer' | 'answer' | 'ice-candidate' | 'viewer-request';
+    type: 'offer' | 'answer' | 'ice-candidate' | 'viewer-request' | 'zoom-command';
     from: string; // Camera ID, 'admin', or viewer ID
     to: string;   // Camera ID, 'admin', or viewer ID
     fixtureId: string;

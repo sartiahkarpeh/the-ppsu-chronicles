@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Radio, Volume2, VolumeX, Maximize2, Users, Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { Radio, Volume2, VolumeX, Maximize2, Users, Wifi, WifiOff, RefreshCw, PictureInPicture2, MonitorSmartphone } from 'lucide-react';
 import { doc, onSnapshot, collection, addDoc, serverTimestamp, query, orderBy, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import type { StreamRoom, SignalingMessage } from '@/types/signalingTypes';
@@ -46,12 +46,17 @@ export function LiveStream({
     const [viewerCount, setViewerCount] = useState(0);
     const [retryCount, setRetryCount] = useState(0);
     const [isMounted, setIsMounted] = useState(false);
+    const [isPiPActive, setIsPiPActive] = useState(false);
+    const [isPiPSupported, setIsPiPSupported] = useState(false);
 
     // Generate viewer ID on mount (client-side only)
     useEffect(() => {
         viewerIdRef.current = `viewer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         setViewerCount(Math.floor(Math.random() * 150) + 25);
         setIsMounted(true);
+
+        // Check PiP support
+        setIsPiPSupported('pictureInPictureEnabled' in document && (document as any).pictureInPictureEnabled);
     }, []);
 
     // Subscribe to room updates
@@ -68,6 +73,23 @@ export function LiveStream({
 
         return () => unsubscribe();
     }, [fixtureId]);
+
+    // Track PiP state changes
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        const handleEnterPiP = () => setIsPiPActive(true);
+        const handleLeavePiP = () => setIsPiPActive(false);
+
+        video.addEventListener('enterpictureinpicture', handleEnterPiP);
+        video.addEventListener('leavepictureinpicture', handleLeavePiP);
+
+        return () => {
+            video.removeEventListener('enterpictureinpicture', handleEnterPiP);
+            video.removeEventListener('leavepictureinpicture', handleLeavePiP);
+        };
+    }, [stream]);
 
     // Cleanup function
     const cleanup = useCallback(() => {
@@ -227,6 +249,22 @@ export function LiveStream({
         }
     }, [stream]);
 
+    // Picture-in-Picture toggle
+    const togglePiP = useCallback(async () => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        try {
+            if (isPiPActive) {
+                await (document as any).exitPictureInPicture();
+            } else {
+                await (video as any).requestPictureInPicture();
+            }
+        } catch (error) {
+            console.error('[LiveStream] PiP error:', error);
+        }
+    }, [isPiPActive]);
+
     // Retry connection
     const handleRetry = useCallback(() => {
         if (room?.isLive && room?.activeCameraId) {
@@ -349,9 +387,11 @@ export function LiveStream({
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
+                            {/* Mute/Unmute */}
                             <button
                                 onClick={() => setIsMuted(!isMuted)}
                                 className="p-2 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-colors"
+                                title={isMuted ? 'Unmute' : 'Mute'}
                             >
                                 {isMuted ? (
                                     <VolumeX className="w-5 h-5 text-white" />
@@ -362,14 +402,52 @@ export function LiveStream({
                         </div>
 
                         <div className="flex items-center gap-2">
+                            {/* Picture-in-Picture */}
+                            {isPiPSupported && (
+                                <button
+                                    onClick={togglePiP}
+                                    className={`p-2 backdrop-blur-sm rounded-lg transition-colors ${isPiPActive
+                                            ? 'bg-blue-500/50 hover:bg-blue-500/70'
+                                            : 'bg-white/10 hover:bg-white/20'
+                                        }`}
+                                    title={isPiPActive ? 'Exit Picture-in-Picture' : 'Watch in Picture-in-Picture'}
+                                >
+                                    <PictureInPicture2 className="w-5 h-5 text-white" />
+                                </button>
+                            )}
+
+                            {/* Fullscreen */}
                             <button
                                 onClick={() => videoRef.current?.requestFullscreen()}
                                 className="p-2 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-colors"
+                                title="Fullscreen"
                             >
                                 <Maximize2 className="w-5 h-5 text-white" />
                             </button>
                         </div>
                     </div>
+
+                    {/* PiP hint text */}
+                    {isPiPSupported && !isPiPActive && (
+                        <p className="text-center text-[10px] text-gray-400 mt-2">
+                            Tap <PictureInPicture2 className="w-3 h-3 inline" /> to keep watching while browsing
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {/* PiP Active indicator (when video is in PiP mode) */}
+            {isPiPActive && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/90">
+                    <MonitorSmartphone className="w-16 h-16 text-blue-400 mb-4" />
+                    <p className="text-white font-medium">Playing in Picture-in-Picture</p>
+                    <p className="text-gray-400 text-sm mt-1">Video is playing in a floating window</p>
+                    <button
+                        onClick={togglePiP}
+                        className="mt-4 px-4 py-2 bg-blue-600 rounded-lg text-white text-sm hover:bg-blue-700 transition-colors"
+                    >
+                        Return to Page
+                    </button>
                 </div>
             )}
         </motion.div>

@@ -17,26 +17,31 @@ import {
     Upload,
     Image as ImageIcon,
     X,
-    Film
+    Film,
+    ZoomIn
 } from 'lucide-react';
-import { doc, onSnapshot, getDocs, query, collection, orderBy, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDocs, query, collection, orderBy, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '@/firebase/config';
 import { useWebRTCViewer } from '@/hooks/useWebRTCViewer';
 import type { Fixture } from '@/types/fixtureTypes';
 import type { Team } from '@/types/afcon';
 
-// Small camera feed for selection
+const ZOOM_LEVELS = [0.5, 1, 2, 5];
+
+// Small camera feed for selection with zoom controls
 interface SmallVideoFeedProps {
     cameraId: 1 | 2 | 3 | 4;
     stream: MediaStream | null;
     isActive: boolean;
     isConnected: boolean;
     onSelect: () => void;
+    onZoom: (level: number) => void;
 }
 
-function SmallVideoFeed({ cameraId, stream, isActive, isConnected, onSelect }: SmallVideoFeedProps) {
+function SmallVideoFeed({ cameraId, stream, isActive, isConnected, onSelect, onZoom }: SmallVideoFeedProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const [showZoom, setShowZoom] = useState(false);
 
     useEffect(() => {
         if (videoRef.current && stream) {
@@ -45,55 +50,91 @@ function SmallVideoFeed({ cameraId, stream, isActive, isConnected, onSelect }: S
     }, [stream]);
 
     return (
-        <button
-            onClick={onSelect}
-            className={`relative bg-gray-900 rounded-lg overflow-hidden aspect-video transition-all ${isActive
-                ? 'ring-2 ring-red-500 ring-offset-2 ring-offset-gray-900'
-                : 'hover:ring-2 hover:ring-blue-500/50'
-                }`}
-        >
-            {/* Camera Label */}
-            <div className="absolute top-1 left-1 z-10 flex items-center gap-1">
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${isActive ? 'bg-red-600 text-white' : 'bg-gray-800/80 text-gray-300'
-                    }`}>
-                    CAM {cameraId}
-                </span>
-                {isActive && (
-                    <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-red-600 rounded text-[10px] font-bold text-white">
-                        <Radio className="w-2 h-2" />
-                        LIVE
+        <div className="relative">
+            <button
+                onClick={onSelect}
+                className={`relative w-full bg-gray-900 rounded-lg overflow-hidden aspect-video transition-all ${isActive
+                    ? 'ring-2 ring-red-500 ring-offset-2 ring-offset-gray-900'
+                    : 'hover:ring-2 hover:ring-blue-500/50'
+                    }`}
+            >
+                {/* Camera Label */}
+                <div className="absolute top-1 left-1 z-10 flex items-center gap-1">
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${isActive ? 'bg-red-600 text-white' : 'bg-gray-800/80 text-gray-300'
+                        }`}>
+                        CAM {cameraId}
                     </span>
-                )}
-            </div>
+                    {isActive && (
+                        <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-red-600 rounded text-[10px] font-bold text-white">
+                            <Radio className="w-2 h-2" />
+                            LIVE
+                        </span>
+                    )}
+                </div>
 
-            {/* Video or Placeholder */}
-            {stream ? (
-                <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="w-full h-full object-cover"
-                />
-            ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center bg-gray-800">
-                    {isConnected ? (
-                        <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                        <CameraOff className="w-6 h-6 text-gray-600" />
+                {/* Video or Placeholder */}
+                {stream ? (
+                    <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="w-full h-full object-cover"
+                    />
+                ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-800">
+                        {isConnected ? (
+                            <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            <CameraOff className="w-6 h-6 text-gray-600" />
+                        )}
+                    </div>
+                )}
+
+                {/* Selection Overlay */}
+                {stream && !isActive && (
+                    <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
+                        <span className="px-2 py-1 bg-red-600 rounded text-xs font-bold text-white">
+                            Go Live
+                        </span>
+                    </div>
+                )}
+            </button>
+
+            {/* Zoom Controls - Show when camera is connected */}
+            {stream && (
+                <div className="mt-1">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowZoom(!showZoom);
+                        }}
+                        className="w-full py-1 bg-gray-800 rounded text-[10px] text-gray-400 hover:bg-gray-700 hover:text-white flex items-center justify-center gap-1"
+                    >
+                        <ZoomIn className="w-3 h-3" />
+                        Zoom
+                    </button>
+
+                    {showZoom && (
+                        <div className="absolute left-0 right-0 mt-1 bg-gray-800 rounded-lg p-1 z-20 flex gap-1">
+                            {ZOOM_LEVELS.map((level) => (
+                                <button
+                                    key={level}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        onZoom(level);
+                                        setShowZoom(false);
+                                    }}
+                                    className="flex-1 py-1.5 bg-gray-700 hover:bg-yellow-500 hover:text-black rounded text-[10px] font-bold text-white transition-colors"
+                                >
+                                    {level}x
+                                </button>
+                            ))}
+                        </div>
                     )}
                 </div>
             )}
-
-            {/* Selection Overlay */}
-            {stream && !isActive && (
-                <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
-                    <span className="px-2 py-1 bg-red-600 rounded text-xs font-bold text-white">
-                        Go Live
-                    </span>
-                </div>
-            )}
-        </button>
+        </div>
     );
 }
 
@@ -363,6 +404,24 @@ export default function BroadcastDashboardPage({
         return () => unsubscribe();
     }, [fixtureId, teams]);
 
+    // Send zoom command to camera
+    const sendZoomCommand = async (cameraId: 1 | 2 | 3 | 4, zoomLevel: number) => {
+        try {
+            const signalingRef = collection(db, 'broadcast_rooms', fixtureId, 'signaling');
+            await addDoc(signalingRef, {
+                type: 'zoom-command',
+                from: 'admin',
+                to: `camera${cameraId}`,
+                fixtureId,
+                payload: { zoomLevel },
+                timestamp: serverTimestamp(),
+            });
+            console.log(`[Admin] Sent zoom command to camera${cameraId}: ${zoomLevel}x`);
+        } catch (error) {
+            console.error('Error sending zoom command:', error);
+        }
+    };
+
     // Upload fallback media
     const handleUploadFallback = async (file: File) => {
         setIsUploadingFallback(true);
@@ -486,10 +545,10 @@ export default function BroadcastDashboardPage({
                     isUploadingFallback={isUploadingFallback}
                 />
 
-                {/* Camera Selector - 4 small feeds */}
+                {/* Camera Selector - 4 small feeds with zoom controls */}
                 <div>
                     <h2 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Select Camera to Broadcast
+                        Select Camera to Broadcast • Tap "Zoom" to control remotely
                     </h2>
                     <div className="grid grid-cols-4 gap-2">
                         {([1, 2, 3, 4] as const).map((cameraId) => (
@@ -500,6 +559,7 @@ export default function BroadcastDashboardPage({
                                 isActive={activeCameraId === cameraId}
                                 isConnected={isCameraConnected(cameraId)}
                                 onSelect={() => goLive(cameraId)}
+                                onZoom={(level) => sendZoomCommand(cameraId, level)}
                             />
                         ))}
                     </div>
