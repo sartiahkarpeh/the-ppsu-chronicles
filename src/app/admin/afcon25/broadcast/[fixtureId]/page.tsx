@@ -12,12 +12,16 @@ import {
     Maximize2,
     Camera,
     CameraOff,
-    Settings,
     Eye,
-    Users
+    Users,
+    Upload,
+    Image as ImageIcon,
+    X,
+    Film
 } from 'lucide-react';
-import { doc, onSnapshot, getDocs, query, collection, orderBy } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { doc, onSnapshot, getDocs, query, collection, orderBy, updateDoc } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '@/firebase/config';
 import { useWebRTCViewer } from '@/hooks/useWebRTCViewer';
 import type { Fixture } from '@/types/fixtureTypes';
 import type { Team } from '@/types/afcon';
@@ -98,11 +102,27 @@ interface MainPreviewProps {
     stream: MediaStream | null;
     activeCameraId: 1 | 2 | 3 | 4 | null;
     fixture: Fixture | null;
+    fallbackMediaUrl: string | null;
+    fallbackMediaType: 'image' | 'video' | null;
     onStopLive: () => void;
+    onUploadFallback: (file: File) => void;
+    onRemoveFallback: () => void;
+    isUploadingFallback: boolean;
 }
 
-function MainPreview({ stream, activeCameraId, fixture, onStopLive }: MainPreviewProps) {
+function MainPreview({
+    stream,
+    activeCameraId,
+    fixture,
+    fallbackMediaUrl,
+    fallbackMediaType,
+    onStopLive,
+    onUploadFallback,
+    onRemoveFallback,
+    isUploadingFallback
+}: MainPreviewProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [isMuted, setIsMuted] = useState(true);
 
     useEffect(() => {
@@ -110,6 +130,15 @@ function MainPreview({ stream, activeCameraId, fixture, onStopLive }: MainPrevie
             videoRef.current.srcObject = stream;
         }
     }, [stream]);
+
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            onUploadFallback(file);
+        }
+    };
+
+    const showFallback = !stream && !activeCameraId && fallbackMediaUrl;
 
     return (
         <div className="relative bg-gray-900 rounded-2xl overflow-hidden aspect-video">
@@ -125,6 +154,12 @@ function MainPreview({ stream, activeCameraId, fixture, onStopLive }: MainPrevie
                         CAM {activeCameraId} LIVE
                     </span>
                 )}
+                {showFallback && (
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 rounded-lg text-xs font-bold text-white">
+                        <ImageIcon className="w-3 h-3" />
+                        FALLBACK
+                    </span>
+                )}
             </div>
 
             {/* Simulated Viewer Count */}
@@ -135,7 +170,7 @@ function MainPreview({ stream, activeCameraId, fixture, onStopLive }: MainPrevie
                 </span>
             </div>
 
-            {/* Video or Placeholder */}
+            {/* Video Content */}
             {stream && activeCameraId ? (
                 <>
                     <video
@@ -161,13 +196,70 @@ function MainPreview({ stream, activeCameraId, fixture, onStopLive }: MainPrevie
                         </div>
                     </div>
                 </>
+            ) : showFallback ? (
+                /* Fallback Media Display */
+                <div className="w-full h-full relative">
+                    {fallbackMediaType === 'video' ? (
+                        <video
+                            src={fallbackMediaUrl}
+                            autoPlay
+                            loop
+                            muted
+                            playsInline
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <img
+                            src={fallbackMediaUrl}
+                            alt="Broadcast fallback"
+                            className="w-full h-full object-cover"
+                        />
+                    )}
+
+                    {/* Remove fallback button */}
+                    <button
+                        onClick={onRemoveFallback}
+                        className="absolute bottom-3 right-3 p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+                        title="Remove fallback"
+                    >
+                        <X className="w-4 h-4 text-white" />
+                    </button>
+                </div>
             ) : (
+                /* No Camera / Upload Fallback State */
                 <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
                     <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center mb-4">
                         <Radio className="w-10 h-10 text-gray-500" />
                     </div>
                     <p className="text-gray-400 text-lg font-medium">No Camera Live</p>
-                    <p className="text-gray-500 text-sm">Select a camera below to start broadcasting</p>
+                    <p className="text-gray-500 text-sm mb-4">Select a camera below or upload fallback media</p>
+
+                    {/* Upload Fallback Button */}
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*,video/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                    />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingFallback}
+                        className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-white text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                        {isUploadingFallback ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                Uploading...
+                            </>
+                        ) : (
+                            <>
+                                <Upload className="w-4 h-4" />
+                                Upload Fallback Media
+                            </>
+                        )}
+                    </button>
+                    <p className="text-gray-600 text-xs mt-2">Image or video shown when no cameras are live</p>
                 </div>
             )}
 
@@ -219,6 +311,9 @@ export default function BroadcastDashboardPage({
 
     const [fixture, setFixture] = useState<Fixture | null>(null);
     const [teams, setTeams] = useState<Map<string, Team>>(new Map());
+    const [fallbackMediaUrl, setFallbackMediaUrl] = useState<string | null>(null);
+    const [fallbackMediaType, setFallbackMediaType] = useState<'image' | 'video' | null>(null);
+    const [isUploadingFallback, setIsUploadingFallback] = useState(false);
 
     const {
         streams,
@@ -243,7 +338,7 @@ export default function BroadcastDashboardPage({
         fetchTeams();
     }, []);
 
-    // Fetch fixture with team names
+    // Fetch fixture with team names and fallback media
     useEffect(() => {
         const unsubscribe = onSnapshot(doc(db, 'fixtures', fixtureId), (snapshot) => {
             if (snapshot.exists()) {
@@ -257,10 +352,59 @@ export default function BroadcastDashboardPage({
                     homeTeamName: homeTeam?.name || 'TBD',
                     awayTeamName: awayTeam?.name || 'TBD',
                 } as Fixture);
+
+                // Load fallback media if exists
+                if (data.fallbackMediaUrl) {
+                    setFallbackMediaUrl(data.fallbackMediaUrl);
+                    setFallbackMediaType(data.fallbackMediaType || 'image');
+                }
             }
         });
         return () => unsubscribe();
     }, [fixtureId, teams]);
+
+    // Upload fallback media
+    const handleUploadFallback = async (file: File) => {
+        setIsUploadingFallback(true);
+
+        try {
+            const isVideo = file.type.startsWith('video/');
+            const ext = file.name.split('.').pop();
+            const fileName = `broadcast_fallback/${fixtureId}_${Date.now()}.${ext}`;
+            const storageRef = ref(storage, fileName);
+
+            await uploadBytes(storageRef, file);
+            const downloadUrl = await getDownloadURL(storageRef);
+
+            // Update fixture with fallback URL
+            await updateDoc(doc(db, 'fixtures', fixtureId), {
+                fallbackMediaUrl: downloadUrl,
+                fallbackMediaType: isVideo ? 'video' : 'image',
+            });
+
+            setFallbackMediaUrl(downloadUrl);
+            setFallbackMediaType(isVideo ? 'video' : 'image');
+        } catch (error) {
+            console.error('Error uploading fallback media:', error);
+            alert('Error uploading media');
+        } finally {
+            setIsUploadingFallback(false);
+        }
+    };
+
+    // Remove fallback media
+    const handleRemoveFallback = async () => {
+        try {
+            await updateDoc(doc(db, 'fixtures', fixtureId), {
+                fallbackMediaUrl: null,
+                fallbackMediaType: null,
+            });
+            setFallbackMediaUrl(null);
+            setFallbackMediaType(null);
+        } catch (error) {
+            console.error('Error removing fallback:', error);
+        }
+    };
 
     // Get stream for a camera
     const getStreamForCamera = (cameraId: 1 | 2 | 3 | 4): MediaStream | null => {
@@ -334,7 +478,12 @@ export default function BroadcastDashboardPage({
                     stream={getActiveStream()}
                     activeCameraId={activeCameraId}
                     fixture={fixture}
+                    fallbackMediaUrl={fallbackMediaUrl}
+                    fallbackMediaType={fallbackMediaType}
                     onStopLive={stopLive}
+                    onUploadFallback={handleUploadFallback}
+                    onRemoveFallback={handleRemoveFallback}
+                    isUploadingFallback={isUploadingFallback}
                 />
 
                 {/* Camera Selector - 4 small feeds */}

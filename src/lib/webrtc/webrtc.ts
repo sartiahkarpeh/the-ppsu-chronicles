@@ -233,9 +233,19 @@ export class WebRTCManager {
                             // Handle answer from admin or viewer
                             const pc = this.peerConnections.get(message.from);
                             if (pc && message.payload) {
-                                await pc.setRemoteDescription(message.payload as RTCSessionDescriptionInit);
-                                this.remoteDescriptionSet.set(message.from, true);
-                                await this.processPendingCandidates(message.from);
+                                // Check signaling state before setting remote description
+                                // Only set if we're waiting for an answer (have-local-offer state)
+                                if (pc.signalingState === 'have-local-offer') {
+                                    try {
+                                        await pc.setRemoteDescription(message.payload as RTCSessionDescriptionInit);
+                                        this.remoteDescriptionSet.set(message.from, true);
+                                        await this.processPendingCandidates(message.from);
+                                    } catch (error) {
+                                        console.error(`[Camera${this.cameraId}] Error setting remote description:`, error);
+                                    }
+                                } else {
+                                    console.log(`[Camera${this.cameraId}] Ignoring answer - already in state: ${pc.signalingState}`);
+                                }
                             }
                             await deleteDoc(change.doc.ref);
                         } else if (message.type === 'ice-candidate') {
