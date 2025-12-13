@@ -2,11 +2,10 @@
 
 import React, { useEffect, useRef, use, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
     ArrowLeft,
     Camera,
-    CameraOff,
     Mic,
     MicOff,
     RotateCcw,
@@ -38,22 +37,17 @@ export default function CameraStreamPage({
 
     const [fixture, setFixture] = useState<Fixture | null>(null);
     const [isMuted, setIsMuted] = useState(false);
-    const [showControls, setShowControls] = useState(true);
-    const [controlsTimeout, setControlsTimeout] = useState<NodeJS.Timeout | null>(null);
 
     const {
         localStream,
         isConnecting,
-        isConnected,
         isStreaming,
         isLive,
         error,
         room,
         zoomLevel,
         zoomCapabilities,
-        availableZoomPresets,
         startPreview,
-        stopPreview,
         startStreaming,
         stopStreaming,
         toggleCamera,
@@ -87,7 +81,6 @@ export default function CameraStreamPage({
         const requestFullscreen = async () => {
             try {
                 if (containerRef.current && document.fullscreenEnabled) {
-                    // Small delay to ensure DOM is ready
                     await new Promise(resolve => setTimeout(resolve, 500));
                     await containerRef.current.requestFullscreen();
                 }
@@ -97,23 +90,6 @@ export default function CameraStreamPage({
         };
         requestFullscreen();
     }, []);
-
-    // Auto-hide controls after 3 seconds
-    useEffect(() => {
-        if (showControls && localStream) {
-            if (controlsTimeout) clearTimeout(controlsTimeout);
-            const timeout = setTimeout(() => setShowControls(false), 3000);
-            setControlsTimeout(timeout);
-        }
-        return () => {
-            if (controlsTimeout) clearTimeout(controlsTimeout);
-        };
-    }, [showControls, localStream]);
-
-    // Handle screen tap to show/hide controls
-    const handleScreenTap = () => {
-        setShowControls(true);
-    };
 
     // Handle mute toggle
     const handleToggleMute = () => {
@@ -134,249 +110,191 @@ export default function CameraStreamPage({
     return (
         <div
             ref={containerRef}
-            className="fixed inset-0 bg-black"
-            onClick={handleScreenTap}
+            className="fixed inset-0 bg-black flex flex-col"
         >
+            {/* Compact Top Bar - Always visible */}
+            <div className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/60 to-transparent">
+                <div className="flex items-center justify-between px-3 py-2 safe-area-inset-top">
+                    {/* Back button */}
+                    <button
+                        onClick={() => router.push('/admin/afcon25/camera')}
+                        className="p-2 bg-black/40 rounded-full"
+                    >
+                        <ArrowLeft className="w-5 h-5 text-white" />
+                    </button>
+
+                    {/* Status badges - compact */}
+                    <div className="flex items-center gap-1.5">
+                        <span className="px-2 py-1 bg-gray-800/80 rounded-full text-xs font-bold text-white">
+                            CAM {cameraId}
+                        </span>
+
+                        {isLive && (
+                            <span className="flex items-center gap-1 px-2 py-1 bg-red-600 rounded-full text-xs font-bold text-white">
+                                <Radio className="w-3 h-3 animate-pulse" />
+                                LIVE
+                            </span>
+                        )}
+
+                        {/* Connection Status - small indicator */}
+                        <span className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${isStreaming ? 'bg-green-600/80 text-white' :
+                                isConnecting ? 'bg-yellow-600/80 text-white' :
+                                    'bg-gray-700/80 text-gray-300'
+                            }`}>
+                            {isStreaming ? <Wifi className="w-3 h-3" /> :
+                                isConnecting ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> :
+                                    <WifiOff className="w-3 h-3" />}
+                        </span>
+                    </div>
+
+                    {/* Zoom indicator */}
+                    {localStream && zoomCapabilities.supported && (
+                        <span className="px-2 py-1 bg-yellow-500/80 rounded-full text-xs font-bold text-black">
+                            {zoomLevel.toFixed(1)}x
+                        </span>
+                    )}
+                    {(!localStream || !zoomCapabilities.supported) && <div className="w-10" />}
+                </div>
+            </div>
+
             {/* Full Screen Video */}
-            <div className="absolute inset-0">
+            <div className="flex-1 relative">
                 {localStream ? (
                     <video
                         ref={videoRef}
                         autoPlay
                         playsInline
                         muted
-                        className="w-full h-full object-cover"
+                        className="absolute inset-0 w-full h-full object-cover"
                     />
                 ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center">
-                        <Camera className="w-20 h-20 text-gray-600 mb-4" />
-                        <p className="text-gray-400 text-lg mb-2">Camera Preview</p>
-                        <p className="text-gray-500 text-sm">Tap below to start camera</p>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <Camera className="w-16 h-16 text-gray-600 mb-3" />
+                        <p className="text-gray-400 text-sm">Tap Start to enable camera</p>
+                    </div>
+                )}
+
+                {/* Error Display */}
+                {error && (
+                    <div className="absolute inset-x-3 top-14 bg-red-500/90 rounded-lg px-3 py-2 z-30">
+                        <p className="text-white text-xs font-medium">{error}</p>
+                    </div>
+                )}
+
+                {/* Zoom Controls - Right Side - Always visible when camera active */}
+                {localStream && zoomCapabilities.supported && (
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 z-20">
+                        <div className="bg-black/50 backdrop-blur-sm rounded-xl p-1.5 space-y-1.5">
+                            {[0.5, 1, 2, 5].map((level) => {
+                                const isAvailable = level >= zoomCapabilities.min && level <= zoomCapabilities.max;
+                                const isActive = Math.abs(zoomLevel - level) < 0.1;
+
+                                return (
+                                    <button
+                                        key={level}
+                                        onClick={() => handleZoomSelect(level)}
+                                        disabled={!isAvailable}
+                                        className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-xs transition-all ${isActive
+                                                ? 'bg-yellow-500 text-black'
+                                                : isAvailable
+                                                    ? 'bg-white/20 text-white active:bg-white/30'
+                                                    : 'bg-white/5 text-white/30'
+                                            }`}
+                                    >
+                                        {level}x
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
             </div>
 
-            {/* Overlay Controls - Animated */}
-            <AnimatePresence>
-                {showControls && (
-                    <>
-                        {/* Top Bar */}
-                        <motion.div
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            className="absolute top-0 left-0 right-0 z-20 bg-gradient-to-b from-black/80 to-transparent pt-safe"
-                        >
-                            <div className="flex items-center justify-between px-4 py-4">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        router.push('/admin/afcon25/camera');
-                                    }}
-                                    className="p-3 bg-black/50 rounded-full"
-                                >
-                                    <ArrowLeft className="w-6 h-6 text-white" />
-                                </button>
-
-                                <div className="flex items-center gap-2">
-                                    {/* Camera ID Badge */}
-                                    <span className="px-4 py-2 bg-red-600 rounded-full text-sm font-bold text-white">
-                                        CAM {cameraId}
-                                    </span>
-
-                                    {/* Live Status */}
-                                    {isLive && (
-                                        <motion.span
-                                            initial={{ scale: 0.9 }}
-                                            animate={{ scale: 1 }}
-                                            className="flex items-center gap-1.5 px-4 py-2 bg-red-600 rounded-full text-sm font-bold text-white"
-                                        >
-                                            <Radio className="w-4 h-4 animate-pulse" />
-                                            ON AIR
-                                        </motion.span>
-                                    )}
-                                </div>
-
-                                {/* Connection Status */}
-                                <div className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-medium ${isStreaming ? 'bg-green-500/30 text-green-400' :
-                                        isConnecting ? 'bg-yellow-500/30 text-yellow-400' :
-                                            'bg-gray-800/80 text-gray-400'
-                                    }`}>
-                                    {isStreaming ? (
-                                        <><Wifi className="w-4 h-4" /> Live</>
-                                    ) : isConnecting ? (
-                                        <><div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" /></>
-                                    ) : (
-                                        <><WifiOff className="w-4 h-4" /></>
-                                    )}
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        {/* Zoom Controls - Right Side */}
-                        {localStream && zoomCapabilities.supported && (
-                            <motion.div
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 20 }}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 z-20"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-2 space-y-2">
-                                    <div className="text-center mb-2">
-                                        <ZoomIn className="w-5 h-5 text-white/60 mx-auto" />
-                                    </div>
-                                    {[0.5, 1, 2, 5].map((level) => {
-                                        const isAvailable = level >= zoomCapabilities.min && level <= zoomCapabilities.max;
-                                        const isActive = Math.abs(zoomLevel - level) < 0.1;
-
-                                        return (
-                                            <button
-                                                key={level}
-                                                onClick={() => handleZoomSelect(level)}
-                                                disabled={!isAvailable}
-                                                className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-sm transition-all ${isActive
-                                                        ? 'bg-yellow-500 text-black scale-110'
-                                                        : isAvailable
-                                                            ? 'bg-white/20 text-white hover:bg-white/30'
-                                                            : 'bg-white/5 text-white/30 cursor-not-allowed'
-                                                    }`}
-                                            >
-                                                {level}x
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </motion.div>
-                        )}
-
-                        {/* Error Display */}
-                        {error && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="absolute inset-x-4 top-24 bg-red-500/90 rounded-xl p-4 z-30"
-                            >
-                                <p className="text-white text-sm font-medium">{error}</p>
-                            </motion.div>
-                        )}
-
-                        {/* Bottom Controls */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 20 }}
-                            className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/90 to-transparent pb-safe"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            {/* Match Info */}
-                            {fixture && (
-                                <div className="px-4 mb-4">
-                                    <div className="bg-black/50 backdrop-blur-sm rounded-xl px-4 py-3 flex items-center justify-between">
-                                        <span className="text-white font-medium">
-                                            {fixture.homeTeamName || 'Home'} vs {fixture.awayTeamName || 'Away'}
-                                        </span>
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${fixture.status === 'live' ? 'bg-red-500 text-white' :
-                                                fixture.status === 'ht' ? 'bg-yellow-500 text-black' :
-                                                    'bg-gray-600 text-white'
-                                            }`}>
-                                            {fixture.status?.toUpperCase()}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Camera Controls */}
-                            <div className="flex items-center justify-center gap-6 px-4 pb-8">
-                                {/* Toggle Camera */}
-                                <button
-                                    onClick={toggleCamera}
-                                    disabled={!localStream}
-                                    className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center disabled:opacity-30"
-                                >
-                                    <RotateCcw className="w-7 h-7 text-white" />
-                                </button>
-
-                                {/* Main Action Button */}
-                                {!localStream ? (
-                                    <motion.button
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={startPreview}
-                                        disabled={isConnecting}
-                                        className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex flex-col items-center justify-center shadow-2xl shadow-blue-500/40"
-                                    >
-                                        <Camera className="w-10 h-10 text-white" />
-                                        <span className="text-xs text-white mt-1 font-medium">Start</span>
-                                    </motion.button>
-                                ) : !isStreaming ? (
-                                    <motion.button
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={startStreaming}
-                                        disabled={isConnecting}
-                                        className="w-24 h-24 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex flex-col items-center justify-center shadow-2xl shadow-green-500/40"
-                                    >
-                                        {isConnecting ? (
-                                            <div className="w-10 h-10 border-4 border-white border-t-transparent rounded-full animate-spin" />
-                                        ) : (
-                                            <>
-                                                <Play className="w-10 h-10 text-white" />
-                                                <span className="text-xs text-white mt-1 font-medium">Stream</span>
-                                            </>
-                                        )}
-                                    </motion.button>
-                                ) : (
-                                    <motion.button
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={stopStreaming}
-                                        className="w-24 h-24 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex flex-col items-center justify-center shadow-2xl shadow-red-500/40"
-                                    >
-                                        <Square className="w-10 h-10 text-white" />
-                                        <span className="text-xs text-white mt-1 font-medium">Stop</span>
-                                    </motion.button>
-                                )}
-
-                                {/* Mute Toggle */}
-                                <button
-                                    onClick={handleToggleMute}
-                                    disabled={!localStream}
-                                    className={`w-16 h-16 rounded-full backdrop-blur-sm flex items-center justify-center disabled:opacity-30 ${isMuted ? 'bg-red-500/80' : 'bg-white/20'
-                                        }`}
-                                >
-                                    {isMuted ? (
-                                        <MicOff className="w-7 h-7 text-white" />
-                                    ) : (
-                                        <Mic className="w-7 h-7 text-white" />
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* Status Text */}
-                            <div className="text-center pb-4">
-                                <p className="text-sm text-gray-400">
-                                    {isLive ? (
-                                        <span className="text-red-400 font-medium">🔴 Your camera is LIVE on the broadcast</span>
-                                    ) : isStreaming ? (
-                                        <span className="text-green-400">✓ Streaming to admin dashboard</span>
-                                    ) : localStream ? (
-                                        'Tap "Stream" to connect'
-                                    ) : (
-                                        'Tap "Start" to enable camera'
-                                    )}
-                                </p>
-                            </div>
-                        </motion.div>
-                    </>
+            {/* Bottom Controls - Always visible */}
+            <div className="bg-black/80 backdrop-blur-sm px-4 py-3 safe-area-inset-bottom">
+                {/* Match Info - Compact */}
+                {fixture && (
+                    <div className="text-center mb-2">
+                        <span className="text-white/80 text-xs">
+                            {fixture.homeTeamName || 'Home'} vs {fixture.awayTeamName || 'Away'}
+                        </span>
+                    </div>
                 )}
-            </AnimatePresence>
 
-            {/* Tap to show controls hint */}
-            {!showControls && localStream && (
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
-                    <span className="px-4 py-2 bg-black/40 rounded-full text-white/60 text-xs">
-                        Tap to show controls
-                    </span>
+                {/* Camera Controls Row */}
+                <div className="flex items-center justify-center gap-4">
+                    {/* Toggle Camera */}
+                    <button
+                        onClick={toggleCamera}
+                        disabled={!localStream}
+                        className="w-12 h-12 rounded-full bg-white/15 flex items-center justify-center disabled:opacity-30"
+                    >
+                        <RotateCcw className="w-5 h-5 text-white" />
+                    </button>
+
+                    {/* Main Action Button */}
+                    {!localStream ? (
+                        <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            onClick={startPreview}
+                            disabled={isConnecting}
+                            className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex flex-col items-center justify-center shadow-lg"
+                        >
+                            <Camera className="w-7 h-7 text-white" />
+                        </motion.button>
+                    ) : !isStreaming ? (
+                        <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            onClick={startStreaming}
+                            disabled={isConnecting}
+                            className="w-16 h-16 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex flex-col items-center justify-center shadow-lg"
+                        >
+                            {isConnecting ? (
+                                <div className="w-7 h-7 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <Play className="w-7 h-7 text-white" />
+                            )}
+                        </motion.button>
+                    ) : (
+                        <motion.button
+                            whileTap={{ scale: 0.95 }}
+                            onClick={stopStreaming}
+                            className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex flex-col items-center justify-center shadow-lg"
+                        >
+                            <Square className="w-7 h-7 text-white" />
+                        </motion.button>
+                    )}
+
+                    {/* Mute Toggle */}
+                    <button
+                        onClick={handleToggleMute}
+                        disabled={!localStream}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center disabled:opacity-30 ${isMuted ? 'bg-red-500' : 'bg-white/15'
+                            }`}
+                    >
+                        {isMuted ? (
+                            <MicOff className="w-5 h-5 text-white" />
+                        ) : (
+                            <Mic className="w-5 h-5 text-white" />
+                        )}
+                    </button>
                 </div>
-            )}
+
+                {/* Status Text - Compact */}
+                <div className="text-center mt-2">
+                    <p className="text-xs text-gray-400">
+                        {isLive ? (
+                            <span className="text-red-400 font-medium">🔴 LIVE on broadcast</span>
+                        ) : isStreaming ? (
+                            <span className="text-green-400">✓ Streaming</span>
+                        ) : localStream ? (
+                            'Tap play to stream'
+                        ) : (
+                            'Tap to start camera'
+                        )}
+                    </p>
+                </div>
+            </div>
         </div>
     );
 }
