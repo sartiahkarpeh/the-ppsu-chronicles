@@ -226,8 +226,8 @@ export default function StandingsPage() {
             ← Back to AFCON 2025
           </Link>
           <SectionHeader
-            title="Group Standings"
-            subtitle="Live tournament standings - auto-updates after each match"
+            title="Semi Finals Standings"
+            subtitle="Knockout stage standings - auto-updates after each match"
           />
         </div>
 
@@ -238,7 +238,7 @@ export default function StandingsPage() {
               .filter(group => GROUPS.includes(group.groupName.replace('Group ', '')))
               .map(group => (
                 <div key={group.id || group.groupId} className="space-y-6">
-                  <StandingsTable standings={group} />
+                  <StandingsTable standings={group} teamsData={teams} isSemiFinals={true} />
 
                   {/* Squad Lists for this Group */}
                   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

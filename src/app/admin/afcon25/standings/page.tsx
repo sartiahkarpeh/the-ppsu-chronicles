@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Search, X, Trophy } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Trophy, RefreshCcw } from 'lucide-react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import type { TeamStanding, Team } from '@/types/afcon';
+
+// Teams to eliminate for Semi Finals
+const ELIMINATED_TEAMS = ['Zimbabwe', 'India', 'Bhutan'];
 
 export default function StandingsManagement() {
     const [standings, setStandings] = useState<TeamStanding[]>([]);
@@ -13,6 +16,7 @@ export default function StandingsManagement() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStanding, setEditingStanding] = useState<TeamStanding | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isResetting, setIsResetting] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState({
@@ -138,6 +142,50 @@ export default function StandingsManagement() {
         }
     };
 
+    // Reset standings for Semi Finals - Remove eliminated teams and reset stats
+    const handleResetForSemiFinals = async () => {
+        const confirmMsg = `This will:\n• Remove eliminated teams: ${ELIMINATED_TEAMS.join(', ')}\n• Reset all remaining teams' stats to 0\n\nAre you sure you want to proceed?`;
+
+        if (!confirm(confirmMsg)) return;
+
+        setIsResetting(true);
+        try {
+            const promises: Promise<void>[] = [];
+
+            for (const standing of standings) {
+                if (ELIMINATED_TEAMS.includes(standing.teamName)) {
+                    // Delete eliminated teams
+                    if (standing.id) {
+                        promises.push(deleteDoc(doc(db, 'afcon_standings', standing.id)));
+                    }
+                } else {
+                    // Reset remaining teams' stats to 0
+                    if (standing.id) {
+                        promises.push(updateDoc(doc(db, 'afcon_standings', standing.id), {
+                            played: 0,
+                            won: 0,
+                            drawn: 0,
+                            lost: 0,
+                            goalsFor: 0,
+                            goalsAgainst: 0,
+                            goalDifference: 0,
+                            points: 0,
+                            updatedAt: serverTimestamp(),
+                        }));
+                    }
+                }
+            }
+
+            await Promise.all(promises);
+            alert(`Semi Finals reset complete!\n• Removed: ${ELIMINATED_TEAMS.join(', ')}\n• All remaining teams reset to 0`);
+        } catch (error) {
+            console.error('Error resetting for semi finals:', error);
+            alert('Error during reset. Check console.');
+        } finally {
+            setIsResetting(false);
+        }
+    };
+
     const filteredStandings = standings.filter(s =>
         s.teamName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.group.toLowerCase().includes(searchTerm.toLowerCase())
@@ -150,13 +198,23 @@ export default function StandingsManagement() {
                     <h1 className="text-3xl font-display font-bold text-black dark:text-white">Standings</h1>
                     <p className="text-black dark:text-gray-400">Manage group tables and points.</p>
                 </div>
-                <button
-                    onClick={() => handleOpenModal()}
-                    className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl"
-                >
-                    <Plus className="w-5 h-5" />
-                    Add Entry
-                </button>
+                <div className="flex flex-wrap gap-3">
+                    <button
+                        onClick={handleResetForSemiFinals}
+                        disabled={isResetting}
+                        className="flex items-center gap-2 bg-amber-500 text-black px-6 py-3 rounded-xl hover:bg-amber-400 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <RefreshCcw className={`w-5 h-5 ${isResetting ? 'animate-spin' : ''}`} />
+                        {isResetting ? 'Resetting...' : 'Reset for Semi Finals'}
+                    </button>
+                    <button
+                        onClick={() => handleOpenModal()}
+                        className="flex items-center gap-2 bg-black text-white px-6 py-3 rounded-xl hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl"
+                    >
+                        <Plus className="w-5 h-5" />
+                        Add Entry
+                    </button>
+                </div>
             </div>
 
             {/* Search */}
