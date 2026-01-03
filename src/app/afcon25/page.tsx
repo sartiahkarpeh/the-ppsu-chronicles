@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Calendar, Trophy, CalendarOff, Shuffle } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, getDocs, doc, getDoc } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import HeroSection from '@/components/afcon/HeroSection';
 import StatsRow from '@/components/afcon/StatsRow';
@@ -12,33 +13,77 @@ import FixtureCard from '@/components/afcon/FixtureCard';
 import type { Fixture } from '@/types/fixtureTypes';
 import type { Team } from '@/types/afcon';
 
+// The final fixture ID
+const FINAL_FIXTURE_ID = 'defhFOoFnIsd8HuLKcTG';
+
+interface FinalFixtureData {
+  id: string;
+  kickoffDateTime: Date;
+  venue: string;
+  homeTeamName: string;
+  homeTeamFlag: string;
+  awayTeamName: string;
+  awayTeamFlag: string;
+}
+
 export default function AFCON25Page() {
   const [upcomingFixtures, setUpcomingFixtures] = useState<Fixture[]>([]);
+  const [finalFixture, setFinalFixture] = useState<FinalFixtureData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch teams first
     const fetchData = async () => {
       try {
         // Get teams
         const teamsQuery = query(collection(db, 'afcon_teams'), orderBy('name'));
         const teamsSnapshot = await getDocs(teamsQuery);
         const teamsMap = new Map<string, Team>();
-        teamsSnapshot.docs.forEach(doc => {
-          teamsMap.set(doc.id, { id: doc.id, ...doc.data() } as Team);
+        teamsSnapshot.docs.forEach(docSnap => {
+          teamsMap.set(docSnap.id, { id: docSnap.id, ...docSnap.data() } as Team);
         });
+
+        // Fetch the final fixture
+        try {
+          const finalDoc = await getDoc(doc(db, 'fixtures', FINAL_FIXTURE_ID));
+          if (finalDoc.exists()) {
+            const data = finalDoc.data();
+            const homeTeam = teamsMap.get(data.homeTeamId);
+            const awayTeam = teamsMap.get(data.awayTeamId);
+
+            let kickoffDate: Date;
+            if (data.kickoffDateTime instanceof Timestamp) {
+              kickoffDate = data.kickoffDateTime.toDate();
+            } else if (data.kickoffDateTime instanceof Date) {
+              kickoffDate = data.kickoffDateTime;
+            } else {
+              kickoffDate = new Date('2026-01-05T16:30:00');
+            }
+
+            setFinalFixture({
+              id: finalDoc.id,
+              kickoffDateTime: kickoffDate,
+              venue: data.venue || 'Main Stadium',
+              homeTeamName: homeTeam?.name || 'Liberia',
+              homeTeamFlag: homeTeam?.flag_url || homeTeam?.crest_url || '',
+              awayTeamName: awayTeam?.name || 'Nigeria',
+              awayTeamFlag: awayTeam?.flag_url || awayTeam?.crest_url || '',
+            });
+          }
+        } catch (error) {
+          console.log('Final fixture not found, using defaults');
+        }
 
         // Subscribe to fixtures
         const fixturesQuery = query(collection(db, 'fixtures'), orderBy('kickoffDateTime', 'asc'));
 
         const unsubscribe = onSnapshot(fixturesQuery, (snapshot) => {
-          const fixturesData = snapshot.docs.map(doc => {
-            const data = doc.data();
+          const fixturesData = snapshot.docs.map(docSnap => {
+            const data = docSnap.data();
             const homeTeam = teamsMap.get(data.homeTeamId);
             const awayTeam = teamsMap.get(data.awayTeamId);
 
             return {
-              id: doc.id,
+              id: docSnap.id,
               ...data,
               homeTeamName: homeTeam?.name || 'TBD',
               homeTeamLogoUrl: homeTeam?.flag_url || homeTeam?.crest_url || '',
@@ -47,12 +92,13 @@ export default function AFCON25Page() {
             } as Fixture;
           });
 
-          // Filter for scheduled/upcoming matches and take first 6
-          // Cast status to any to handle potential string values from Firestore
+          // Filter for scheduled/upcoming matches (excluding the final) and take first 6
           const scheduled = fixturesData
             .filter(f => {
               const status = (f.status as any) || '';
-              return status === 'scheduled' || status === 'upcoming' || status === '';
+              const isUpcoming = status === 'scheduled' || status === 'upcoming' || status === '';
+              const isNotFinal = f.id !== FINAL_FIXTURE_ID;
+              return isUpcoming && isNotFinal;
             })
             .slice(0, 6);
 
@@ -79,7 +125,15 @@ export default function AFCON25Page() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-black">
-      <HeroSection />
+      <HeroSection
+        finalFixtureId={finalFixture?.id || FINAL_FIXTURE_ID}
+        kickoffDateTime={finalFixture?.kickoffDateTime}
+        venue={finalFixture?.venue}
+        homeTeamName={finalFixture?.homeTeamName}
+        homeTeamFlag={finalFixture?.homeTeamFlag}
+        awayTeamName={finalFixture?.awayTeamName}
+        awayTeamFlag={finalFixture?.awayTeamFlag}
+      />
 
       {/* CTA Section */}
       <div className="relative z-20 py-12 bg-white dark:bg-black flex flex-col sm:flex-row gap-6 justify-center items-center px-4 border-b border-gray-100 dark:border-white/5">
@@ -113,13 +167,18 @@ export default function AFCON25Page() {
 
       <main className="max-w-7xl mx-auto px-4 pb-24">
         {/* Upcoming Matches */}
-        <section className="mt-12">
-          <div className="flex items-center justify-between mb-8">
+        <section className="mt-16">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
             <div className="flex items-center gap-4">
-              <div className="h-8 w-2 bg-afcon-green rounded-full"></div>
-              <h2 className="text-3xl md:text-4xl font-display font-bold text-gray-900 dark:text-white uppercase">
-                Upcoming Matches
-              </h2>
+              <div className="h-10 w-2 bg-gradient-to-b from-afcon-gold to-yellow-600 rounded-full shadow-[0_0_15px_rgba(234,179,8,0.5)]"></div>
+              <div>
+                <h2 className="text-3xl md:text-5xl font-display font-black text-gray-900 dark:text-white uppercase tracking-tighter">
+                  Tournament <span className="text-afcon-gold">Action</span>
+                </h2>
+                <p className="text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest text-xs mt-1">
+                  Relive the journey to the grand finale
+                </p>
+              </div>
             </div>
             {upcomingFixtures.length > 0 && (
               <Link
@@ -155,10 +214,10 @@ export default function AFCON25Page() {
                 <CalendarOff className="w-12 h-12 text-gray-400" />
               </div>
               <h3 className="text-2xl font-display font-bold text-gray-900 dark:text-white mb-3">
-                No Upcoming Matches
+                All Eyes on The Final!
               </h3>
               <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto text-lg">
-                All scheduled matches will appear here. Check back soon or view the fixtures page for the full schedule.
+                The tournament has reached its climax. Watch the grand final between Liberia and Nigeria!
               </p>
             </div>
           )}
