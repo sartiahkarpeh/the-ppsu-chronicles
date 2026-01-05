@@ -75,6 +75,26 @@ service cloud.firestore {
       allow write: if true; // For development
     }
 
+    // ============= BROADCASTING COLLECTIONS =============
+
+    // Broadcast rooms - Real-time streaming state
+    match /broadcast_rooms/{roomId} {
+      allow read: if true;
+      allow write: if true; // For development
+      
+      // Signaling subcollection for WebRTC
+      match /signaling/{messageId} {
+        allow read: if true;
+        allow write: if true; // For development
+      }
+    }
+
+    // Broadcast recordings - Stored replays
+    match /broadcast_recordings/{recordingId} {
+      allow read: if true;
+      allow write: if true; // For development
+    }
+
     // Predictions collection
     match /predictions/{predictionId} {
       allow read: if true;

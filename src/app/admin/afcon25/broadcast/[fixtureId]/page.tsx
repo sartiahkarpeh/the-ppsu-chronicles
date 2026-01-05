@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, use, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft,
     Radio,
@@ -14,32 +14,51 @@ import {
     CameraOff,
     Eye,
     Users,
-    Upload,
     Image as ImageIcon,
-    X,
-    Film,
-    ZoomIn
+    ZoomIn,
+    ToggleLeft,
+    ToggleRight,
+    CircleDot
 } from 'lucide-react';
-import { doc, onSnapshot, getDocs, query, collection, orderBy, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '@/firebase/config';
+import { doc, onSnapshot, getDocs, query, collection, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 import { useWebRTCViewer } from '@/hooks/useWebRTCViewer';
+import { CameraFallbackUpload } from '@/components/afcon/CameraFallbackUpload';
 import type { Fixture } from '@/types/fixtureTypes';
 import type { Team } from '@/types/afcon';
 
 const ZOOM_LEVELS = [0.5, 1, 2, 5];
 
-// Small camera feed for selection with zoom controls
+// Small camera feed for selection with zoom controls and fallback management
 interface SmallVideoFeedProps {
     cameraId: 1 | 2 | 3 | 4;
     stream: MediaStream | null;
     isActive: boolean;
     isConnected: boolean;
+    fallbackUrl: string | null;
+    isUsingFallback: boolean;
+    isUploadingFallback: boolean;
     onSelect: () => void;
     onZoom: (level: number) => void;
+    onToggleFallback: () => void;
+    onUploadFallback: (file: File) => Promise<void>;
+    onRemoveFallback: () => Promise<void>;
 }
 
-function SmallVideoFeed({ cameraId, stream, isActive, isConnected, onSelect, onZoom }: SmallVideoFeedProps) {
+function SmallVideoFeed({
+    cameraId,
+    stream,
+    isActive,
+    isConnected,
+    fallbackUrl,
+    isUsingFallback,
+    isUploadingFallback,
+    onSelect,
+    onZoom,
+    onToggleFallback,
+    onUploadFallback,
+    onRemoveFallback
+}: SmallVideoFeedProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [showZoom, setShowZoom] = useState(false);
 
@@ -59,21 +78,33 @@ function SmallVideoFeed({ cameraId, stream, isActive, isConnected, onSelect, onZ
                     }`}
             >
                 {/* Camera Label */}
-                <div className="absolute top-1 left-1 z-10 flex items-center gap-1">
+                <div className="absolute top-1 left-1 z-10 flex items-center gap-1 flex-wrap">
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${isActive ? 'bg-red-600 text-white' : 'bg-gray-800/80 text-gray-300'
                         }`}>
                         CAM {cameraId}
                     </span>
-                    {isActive && (
+                    {isActive && !isUsingFallback && (
                         <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-red-600 rounded text-[10px] font-bold text-white">
                             <Radio className="w-2 h-2" />
                             LIVE
                         </span>
                     )}
+                    {isUsingFallback && (
+                        <span className="flex items-center gap-0.5 px-1.5 py-0.5 bg-orange-500 rounded text-[10px] font-bold text-white">
+                            <ImageIcon className="w-2 h-2" />
+                            FALLBACK
+                        </span>
+                    )}
                 </div>
 
-                {/* Video or Placeholder */}
-                {stream ? (
+                {/* Video or Fallback or Placeholder */}
+                {isUsingFallback && fallbackUrl ? (
+                    <img
+                        src={fallbackUrl}
+                        alt={`CAM ${cameraId} fallback`}
+                        className="w-full h-full object-cover"
+                    />
+                ) : stream ? (
                     <video
                         ref={videoRef}
                         autoPlay
@@ -92,7 +123,7 @@ function SmallVideoFeed({ cameraId, stream, isActive, isConnected, onSelect, onZ
                 )}
 
                 {/* Selection Overlay */}
-                {stream && !isActive && (
+                {(stream || fallbackUrl) && !isActive && (
                     <div className="absolute inset-0 bg-black/0 hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 hover:opacity-100">
                         <span className="px-2 py-1 bg-red-600 rounded text-xs font-bold text-white">
                             Go Live
@@ -101,39 +132,77 @@ function SmallVideoFeed({ cameraId, stream, isActive, isConnected, onSelect, onZ
                 )}
             </button>
 
-            {/* Zoom Controls - Show when camera is connected */}
-            {stream && (
-                <div className="mt-1">
+            {/* Controls Row */}
+            <div className="mt-1 flex gap-1">
+                {/* Zoom Controls - Show when camera is connected */}
+                {stream && (
+                    <div className="relative flex-1">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setShowZoom(!showZoom);
+                            }}
+                            className="w-full py-1 bg-gray-800 rounded text-[10px] text-gray-400 hover:bg-gray-700 hover:text-white flex items-center justify-center gap-1"
+                        >
+                            <ZoomIn className="w-3 h-3" />
+                            Zoom
+                        </button>
+
+                        {showZoom && (
+                            <div className="absolute left-0 right-0 mt-1 bg-gray-800 rounded-lg p-1 z-20 flex gap-1">
+                                {ZOOM_LEVELS.map((level) => (
+                                    <button
+                                        key={level}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onZoom(level);
+                                            setShowZoom(false);
+                                        }}
+                                        className="flex-1 py-1.5 bg-gray-700 hover:bg-yellow-500 hover:text-black rounded text-[10px] font-bold text-white transition-colors"
+                                    >
+                                        {level}x
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Fallback Toggle - Show when fallback is available */}
+                {fallbackUrl && (
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
-                            setShowZoom(!showZoom);
+                            onToggleFallback();
                         }}
-                        className="w-full py-1 bg-gray-800 rounded text-[10px] text-gray-400 hover:bg-gray-700 hover:text-white flex items-center justify-center gap-1"
+                        className={`flex-1 py-1 rounded text-[10px] font-medium flex items-center justify-center gap-1 transition-colors ${isUsingFallback
+                            ? 'bg-orange-600 text-white hover:bg-orange-700'
+                            : 'bg-green-700 text-white hover:bg-green-600'
+                            }`}
                     >
-                        <ZoomIn className="w-3 h-3" />
-                        Zoom
+                        {isUsingFallback ? (
+                            <>
+                                <ToggleRight className="w-3 h-3" />
+                                Live
+                            </>
+                        ) : (
+                            <>
+                                <ToggleLeft className="w-3 h-3" />
+                                Fallback
+                            </>
+                        )}
                     </button>
+                )}
+            </div>
 
-                    {showZoom && (
-                        <div className="absolute left-0 right-0 mt-1 bg-gray-800 rounded-lg p-1 z-20 flex gap-1">
-                            {ZOOM_LEVELS.map((level) => (
-                                <button
-                                    key={level}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onZoom(level);
-                                        setShowZoom(false);
-                                    }}
-                                    className="flex-1 py-1.5 bg-gray-700 hover:bg-yellow-500 hover:text-black rounded text-[10px] font-bold text-white transition-colors"
-                                >
-                                    {level}x
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
+            {/* Fallback Upload Component */}
+            <CameraFallbackUpload
+                cameraId={cameraId}
+                currentFallbackUrl={fallbackUrl}
+                isUploading={isUploadingFallback}
+                onUpload={onUploadFallback}
+                onRemove={onRemoveFallback}
+            />
         </div>
     );
 }
@@ -143,27 +212,20 @@ interface MainPreviewProps {
     stream: MediaStream | null;
     activeCameraId: 1 | 2 | 3 | 4 | null;
     fixture: Fixture | null;
-    fallbackMediaUrl: string | null;
-    fallbackMediaType: 'image' | 'video' | null;
+    activeCameraFallbackUrl: string | null;
+    isUsingFallback: boolean;
     onStopLive: () => void;
-    onUploadFallback: (file: File) => void;
-    onRemoveFallback: () => void;
-    isUploadingFallback: boolean;
 }
 
 function MainPreview({
     stream,
     activeCameraId,
     fixture,
-    fallbackMediaUrl,
-    fallbackMediaType,
-    onStopLive,
-    onUploadFallback,
-    onRemoveFallback,
-    isUploadingFallback
+    activeCameraFallbackUrl,
+    isUsingFallback,
+    onStopLive
 }: MainPreviewProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
     const [isMuted, setIsMuted] = useState(true);
 
     useEffect(() => {
@@ -172,24 +234,19 @@ function MainPreview({
         }
     }, [stream]);
 
-    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            onUploadFallback(file);
-        }
-    };
-
-    const showFallback = !stream && !activeCameraId && fallbackMediaUrl;
+    const showFallback = isUsingFallback && activeCameraFallbackUrl;
+    const showLive = stream && activeCameraId && !isUsingFallback;
+    const showEmpty = !showFallback && !showLive;
 
     return (
         <div className="relative bg-gray-900 rounded-2xl overflow-hidden aspect-video">
             {/* Public View Label */}
-            <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+            <div className="absolute top-3 left-3 z-10 flex items-center gap-2 flex-wrap">
                 <span className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-600 rounded-lg text-xs font-bold text-white">
                     <Eye className="w-3 h-3" />
                     PUBLIC VIEW
                 </span>
-                {activeCameraId && (
+                {activeCameraId && !isUsingFallback && (
                     <span className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 rounded-lg text-xs font-bold text-white animate-pulse">
                         <Radio className="w-3 h-3" />
                         CAM {activeCameraId} LIVE
@@ -198,7 +255,7 @@ function MainPreview({
                 {showFallback && (
                     <span className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-600 rounded-lg text-xs font-bold text-white">
                         <ImageIcon className="w-3 h-3" />
-                        FALLBACK
+                        TEMPORARY FEED
                     </span>
                 )}
             </div>
@@ -212,119 +269,108 @@ function MainPreview({
             </div>
 
             {/* Video Content */}
-            {stream && activeCameraId ? (
-                <>
-                    <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        muted={isMuted}
-                        className="w-full h-full object-cover"
-                    />
+            <AnimatePresence mode="wait">
+                {showLive && (
+                    <motion.div
+                        key="live"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="absolute inset-0"
+                    >
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted={isMuted}
+                            className="w-full h-full object-cover"
+                        />
+                    </motion.div>
+                )}
 
-                    {/* Score Overlay - What public sees */}
-                    <div className="absolute top-12 left-1/2 -translate-x-1/2">
-                        <div className="bg-gradient-to-r from-blue-900 to-blue-800 px-6 py-2 rounded-xl border border-blue-600/30 backdrop-blur-sm">
-                            <div className="flex items-center gap-4">
-                                <span className="text-white font-bold text-sm">{fixture?.homeTeamName || 'Home'}</span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-white font-black text-2xl">{fixture?.homeScore || 0}</span>
-                                    <span className="text-gray-400">-</span>
-                                    <span className="text-white font-black text-2xl">{fixture?.awayScore || 0}</span>
-                                </div>
-                                <span className="text-white font-bold text-sm">{fixture?.awayTeamName || 'Away'}</span>
+                {showFallback && (
+                    <motion.div
+                        key="fallback"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="absolute inset-0 relative"
+                    >
+                        <img
+                            src={activeCameraFallbackUrl!}
+                            alt="Fallback broadcast"
+                            className="w-full h-full object-cover"
+                        />
+                        {/* Temporary Feed Overlay */}
+                        <div className="absolute bottom-16 left-1/2 -translate-x-1/2">
+                            <div className="bg-orange-600/90 backdrop-blur-sm px-4 py-2 rounded-full">
+                                <span className="text-white text-sm font-medium">📡 Temporary Feed</span>
                             </div>
                         </div>
-                    </div>
-                </>
-            ) : showFallback ? (
-                /* Fallback Media Display */
-                <div className="w-full h-full relative">
-                    {fallbackMediaType === 'video' ? (
-                        <video
-                            src={fallbackMediaUrl}
-                            autoPlay
-                            loop
-                            muted
-                            playsInline
-                            className="w-full h-full object-cover"
-                        />
-                    ) : (
-                        <img
-                            src={fallbackMediaUrl}
-                            alt="Broadcast fallback"
-                            className="w-full h-full object-cover"
-                        />
-                    )}
+                    </motion.div>
+                )}
 
-                    {/* Remove fallback button */}
-                    <button
-                        onClick={onRemoveFallback}
-                        className="absolute bottom-3 right-3 p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
-                        title="Remove fallback"
+                {showEmpty && (
+                    <motion.div
+                        key="empty"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900"
                     >
-                        <X className="w-4 h-4 text-white" />
-                    </button>
-                </div>
-            ) : (
-                /* No Camera / Upload Fallback State */
-                <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-                    <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center mb-4">
-                        <Radio className="w-10 h-10 text-gray-500" />
-                    </div>
-                    <p className="text-gray-400 text-lg font-medium">No Camera Live</p>
-                    <p className="text-gray-500 text-sm mb-4">Select a camera below or upload fallback media</p>
+                        <div className="w-20 h-20 rounded-full bg-gray-700 flex items-center justify-center mb-4">
+                            <Radio className="w-10 h-10 text-gray-500" />
+                        </div>
+                        <p className="text-gray-400 text-lg font-medium">No Camera Live</p>
+                        <p className="text-gray-500 text-sm">Select a camera below to start broadcasting</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-                    {/* Upload Fallback Button */}
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*,video/*"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                    />
-                    <button
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploadingFallback}
-                        className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-white text-sm font-medium transition-colors disabled:opacity-50"
-                    >
-                        {isUploadingFallback ? (
-                            <>
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                Uploading...
-                            </>
-                        ) : (
-                            <>
-                                <Upload className="w-4 h-4" />
-                                Upload Fallback Media
-                            </>
-                        )}
-                    </button>
-                    <p className="text-gray-600 text-xs mt-2">Image or video shown when no cameras are live</p>
+            {/* Score Overlay - What public sees */}
+            {(showLive || showFallback) && (
+                <div className="absolute top-12 left-1/2 -translate-x-1/2 z-10">
+                    <div className="bg-gradient-to-r from-blue-900 to-blue-800 px-6 py-2 rounded-xl border border-blue-600/30 backdrop-blur-sm">
+                        <div className="flex items-center gap-4">
+                            <span className="text-white font-bold text-sm">{fixture?.homeTeamName || 'Home'}</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-white font-black text-2xl">{fixture?.homeScore || 0}</span>
+                                <span className="text-gray-400">-</span>
+                                <span className="text-white font-black text-2xl">{fixture?.awayScore || 0}</span>
+                            </div>
+                            <span className="text-white font-bold text-sm">{fixture?.awayTeamName || 'Away'}</span>
+                        </div>
+                    </div>
                 </div>
             )}
 
             {/* Controls */}
-            {stream && activeCameraId && (
+            {(showLive || showFallback) && (
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setIsMuted(!isMuted)}
-                                className="p-2.5 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-colors"
-                            >
-                                {isMuted ? (
-                                    <VolumeX className="w-5 h-5 text-white" />
-                                ) : (
-                                    <Volume2 className="w-5 h-5 text-white" />
-                                )}
-                            </button>
-                            <button
-                                onClick={() => videoRef.current?.requestFullscreen()}
-                                className="p-2.5 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-colors"
-                            >
-                                <Maximize2 className="w-5 h-5 text-white" />
-                            </button>
+                            {showLive && (
+                                <button
+                                    onClick={() => setIsMuted(!isMuted)}
+                                    className="p-2.5 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-colors"
+                                >
+                                    {isMuted ? (
+                                        <VolumeX className="w-5 h-5 text-white" />
+                                    ) : (
+                                        <Volume2 className="w-5 h-5 text-white" />
+                                    )}
+                                </button>
+                            )}
+                            {showLive && (
+                                <button
+                                    onClick={() => videoRef.current?.requestFullscreen()}
+                                    className="p-2.5 bg-white/10 backdrop-blur-sm rounded-lg hover:bg-white/20 transition-colors"
+                                >
+                                    <Maximize2 className="w-5 h-5 text-white" />
+                                </button>
+                            )}
                         </div>
 
                         <button
@@ -352,9 +398,6 @@ export default function BroadcastDashboardPage({
 
     const [fixture, setFixture] = useState<Fixture | null>(null);
     const [teams, setTeams] = useState<Map<string, Team>>(new Map());
-    const [fallbackMediaUrl, setFallbackMediaUrl] = useState<string | null>(null);
-    const [fallbackMediaType, setFallbackMediaType] = useState<'image' | 'video' | null>(null);
-    const [isUploadingFallback, setIsUploadingFallback] = useState(false);
 
     const {
         streams,
@@ -363,6 +406,10 @@ export default function BroadcastDashboardPage({
         goLive,
         stopLive,
         getConnectedCameras,
+        uploadCameraFallback,
+        removeCameraFallback,
+        toggleCameraFallback,
+        getCameraFallbackState,
     } = useWebRTCViewer({ fixtureId });
 
     // Fetch teams
@@ -379,7 +426,7 @@ export default function BroadcastDashboardPage({
         fetchTeams();
     }, []);
 
-    // Fetch fixture with team names and fallback media
+    // Fetch fixture with team names
     useEffect(() => {
         const unsubscribe = onSnapshot(doc(db, 'fixtures', fixtureId), (snapshot) => {
             if (snapshot.exists()) {
@@ -393,12 +440,6 @@ export default function BroadcastDashboardPage({
                     homeTeamName: homeTeam?.name || 'TBD',
                     awayTeamName: awayTeam?.name || 'TBD',
                 } as Fixture);
-
-                // Load fallback media if exists
-                if (data.fallbackMediaUrl) {
-                    setFallbackMediaUrl(data.fallbackMediaUrl);
-                    setFallbackMediaType(data.fallbackMediaType || 'image');
-                }
             }
         });
         return () => unsubscribe();
@@ -422,49 +463,6 @@ export default function BroadcastDashboardPage({
         }
     };
 
-    // Upload fallback media
-    const handleUploadFallback = async (file: File) => {
-        setIsUploadingFallback(true);
-
-        try {
-            const isVideo = file.type.startsWith('video/');
-            const ext = file.name.split('.').pop();
-            const fileName = `broadcast_fallback/${fixtureId}_${Date.now()}.${ext}`;
-            const storageRef = ref(storage, fileName);
-
-            await uploadBytes(storageRef, file);
-            const downloadUrl = await getDownloadURL(storageRef);
-
-            // Update fixture with fallback URL
-            await updateDoc(doc(db, 'fixtures', fixtureId), {
-                fallbackMediaUrl: downloadUrl,
-                fallbackMediaType: isVideo ? 'video' : 'image',
-            });
-
-            setFallbackMediaUrl(downloadUrl);
-            setFallbackMediaType(isVideo ? 'video' : 'image');
-        } catch (error) {
-            console.error('Error uploading fallback media:', error);
-            alert('Error uploading media');
-        } finally {
-            setIsUploadingFallback(false);
-        }
-    };
-
-    // Remove fallback media
-    const handleRemoveFallback = async () => {
-        try {
-            await updateDoc(doc(db, 'fixtures', fixtureId), {
-                fallbackMediaUrl: null,
-                fallbackMediaType: null,
-            });
-            setFallbackMediaUrl(null);
-            setFallbackMediaType(null);
-        } catch (error) {
-            console.error('Error removing fallback:', error);
-        }
-    };
-
     // Get stream for a camera
     const getStreamForCamera = (cameraId: 1 | 2 | 3 | 4): MediaStream | null => {
         const stream = streams.get(`camera${cameraId}`);
@@ -483,7 +481,14 @@ export default function BroadcastDashboardPage({
         return camera?.status === 'streaming' || camera?.status === 'connected';
     };
 
+    // Get active camera's fallback state
+    const getActiveCameraFallbackState = () => {
+        if (!activeCameraId) return { isUsingFallback: false, fallbackUrl: null };
+        return getCameraFallbackState(activeCameraId);
+    };
+
     const connectedCameras = getConnectedCameras();
+    const activeFallbackState = getActiveCameraFallbackState();
 
     return (
         <div className="min-h-screen bg-gray-100 dark:bg-[#0a0a0f]">
@@ -504,10 +509,16 @@ export default function BroadcastDashboardPage({
                                 </h1>
                                 <div className="flex items-center gap-2 text-xs text-gray-500">
                                     <span>Broadcast Control</span>
-                                    {activeCameraId && (
+                                    {activeCameraId && !activeFallbackState.isUsingFallback && (
                                         <span className="flex items-center gap-1 px-2 py-0.5 bg-red-500 text-white rounded-full font-medium animate-pulse">
                                             <Radio className="w-3 h-3" />
                                             LIVE
+                                        </span>
+                                    )}
+                                    {activeFallbackState.isUsingFallback && (
+                                        <span className="flex items-center gap-1 px-2 py-0.5 bg-orange-500 text-white rounded-full font-medium">
+                                            <ImageIcon className="w-3 h-3" />
+                                            FALLBACK
                                         </span>
                                     )}
                                 </div>
@@ -537,31 +548,37 @@ export default function BroadcastDashboardPage({
                     stream={getActiveStream()}
                     activeCameraId={activeCameraId}
                     fixture={fixture}
-                    fallbackMediaUrl={fallbackMediaUrl}
-                    fallbackMediaType={fallbackMediaType}
+                    activeCameraFallbackUrl={activeFallbackState.fallbackUrl}
+                    isUsingFallback={activeFallbackState.isUsingFallback}
                     onStopLive={stopLive}
-                    onUploadFallback={handleUploadFallback}
-                    onRemoveFallback={handleRemoveFallback}
-                    isUploadingFallback={isUploadingFallback}
                 />
 
-                {/* Camera Selector - 4 small feeds with zoom controls */}
+                {/* Camera Selector - 4 small feeds with zoom and fallback controls */}
                 <div>
                     <h2 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
-                        Select Camera to Broadcast • Tap "Zoom" to control remotely
+                        Camera Controls • Upload fallback images • Toggle between live/fallback
                     </h2>
-                    <div className="grid grid-cols-4 gap-2">
-                        {([1, 2, 3, 4] as const).map((cameraId) => (
-                            <SmallVideoFeed
-                                key={cameraId}
-                                cameraId={cameraId}
-                                stream={getStreamForCamera(cameraId)}
-                                isActive={activeCameraId === cameraId}
-                                isConnected={isCameraConnected(cameraId)}
-                                onSelect={() => goLive(cameraId)}
-                                onZoom={(level) => sendZoomCommand(cameraId, level)}
-                            />
-                        ))}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {([1, 2, 3, 4] as const).map((cameraId) => {
+                            const fallbackState = getCameraFallbackState(cameraId);
+                            return (
+                                <SmallVideoFeed
+                                    key={cameraId}
+                                    cameraId={cameraId}
+                                    stream={getStreamForCamera(cameraId)}
+                                    isActive={activeCameraId === cameraId}
+                                    isConnected={isCameraConnected(cameraId)}
+                                    fallbackUrl={fallbackState.fallbackUrl}
+                                    isUsingFallback={fallbackState.isUsingFallback}
+                                    isUploadingFallback={fallbackState.isUploading}
+                                    onSelect={() => goLive(cameraId)}
+                                    onZoom={(level) => sendZoomCommand(cameraId, level)}
+                                    onToggleFallback={() => toggleCameraFallback(cameraId)}
+                                    onUploadFallback={(file) => uploadCameraFallback(cameraId, file)}
+                                    onRemoveFallback={() => removeCameraFallback(cameraId)}
+                                />
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -583,6 +600,29 @@ export default function BroadcastDashboardPage({
                     >
                         Copy Camera URL
                     </button>
+                </div>
+
+                {/* Status Legend */}
+                <div className="bg-gray-800/50 rounded-xl p-4">
+                    <h3 className="text-xs text-gray-400 mb-2 font-medium">STATUS LEGEND</h3>
+                    <div className="flex flex-wrap gap-3 text-xs">
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                            <span className="text-gray-300">Live Camera</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 bg-orange-500 rounded-full" />
+                            <span className="text-gray-300">Fallback Image</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 bg-green-500 rounded-full" />
+                            <span className="text-gray-300">Connected</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                            <span className="w-2 h-2 bg-gray-500 rounded-full" />
+                            <span className="text-gray-300">Offline</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

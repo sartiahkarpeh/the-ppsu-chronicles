@@ -6,6 +6,8 @@ export interface CameraConnection {
     status: 'connecting' | 'connected' | 'streaming' | 'disconnected';
     deviceName?: string;
     connectedAt?: string;
+    fallbackImageUrl?: string;
+    isUsingFallback?: boolean;
 }
 
 export interface SignalingMessage {

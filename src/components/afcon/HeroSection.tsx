@@ -14,6 +14,7 @@ interface HeroSectionProps {
   homeTeamFlag?: string;
   awayTeamName?: string;
   awayTeamFlag?: string;
+  upcomingMatchUrl?: string; // URL to the next upcoming match
 }
 
 export default function HeroSection({
@@ -24,6 +25,7 @@ export default function HeroSection({
   homeTeamFlag,
   awayTeamName = 'Nigeria',
   awayTeamFlag,
+  upcomingMatchUrl,
 }: HeroSectionProps) {
   const [activeImage, setActiveImage] = useState(0);
   const images = ['/finale.jpg', '/finale2.jpeg'];
@@ -188,7 +190,7 @@ export default function HeroSection({
         {/* CTA Button - Ultra Premium */}
         <div className="animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
           <Link
-            href={`/afcon25/fixtures/${finalFixtureId}`}
+            href={upcomingMatchUrl || `/afcon25/fixtures/${finalFixtureId}`}
             className="group relative inline-flex items-center gap-4 px-10 md:px-16 py-5 md:py-6 bg-white text-black font-display font-black text-lg md:text-xl uppercase tracking-[0.2em] rounded-full overflow-hidden transition-all duration-500 hover:scale-105 hover:bg-afcon-gold"
           >
             <span className="relative z-10">Enter The Arena</span>

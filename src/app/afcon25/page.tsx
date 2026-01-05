@@ -133,6 +133,7 @@ export default function AFCON25Page() {
         homeTeamFlag={finalFixture?.homeTeamFlag}
         awayTeamName={finalFixture?.awayTeamName}
         awayTeamFlag={finalFixture?.awayTeamFlag}
+        upcomingMatchUrl={upcomingFixtures.length > 0 ? `/afcon25/fixtures/${upcomingFixtures[0].id}` : undefined}
       />
 
       {/* CTA Section */}
