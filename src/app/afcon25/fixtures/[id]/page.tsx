@@ -49,6 +49,8 @@ export default function FixtureDetailPage({
     const [isShareOpen, setIsShareOpen] = useState(false);
     const [isFavorite, setIsFavorite] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
+    const [showCelebration, setShowCelebration] = useState(false);
+    const FINAL_FIXTURE_ID = 'defhFOoFnIsd8HuLKcTG';
 
     // Fetch teams first
     useEffect(() => {
@@ -241,6 +243,29 @@ export default function FixtureDetailPage({
         });
     };
 
+    const isFinal = fixture?.id === FINAL_FIXTURE_ID;
+    const actualWinner = fixture?.status === 'ft' ? (
+        (fixture.homeScore || 0) > (fixture.awayScore || 0) ? 'home' :
+            (fixture.awayScore || 0) > (fixture.homeScore || 0) ? 'away' :
+                fixture.penalties ? (
+                    (fixture.homePenScore || 0) > (fixture.awayPenScore || 0) ? 'home' :
+                        (fixture.awayPenScore || 0) > (fixture.homePenScore || 0) ? 'away' : null
+                ) : null
+    ) : null;
+
+    useEffect(() => {
+        if (isFinal && fixture?.status === 'ft' && actualWinner) {
+            // Check if we already showed it or if it just finished
+            const hasCeled = sessionStorage.getItem(`celed_${fixture.id}`);
+            if (!hasCeled) {
+                setShowCelebration(true);
+                sessionStorage.setItem(`celed_${fixture.id}`, 'true');
+                const timer = setTimeout(() => setShowCelebration(false), 30000);
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [fixture?.status, actualWinner, isFinal]);
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f13] flex items-center justify-center">
@@ -310,6 +335,12 @@ export default function FixtureDetailPage({
                     </motion.button>
 
                     <div className="flex items-center gap-2">
+                        {isFinal && (
+                            <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-afcon-gold/20 backdrop-blur-md rounded-full border border-afcon-gold/30 mr-2">
+                                <Trophy className="w-3.5 h-3.5 text-afcon-gold" />
+                                <span className="text-[10px] font-black text-afcon-gold uppercase tracking-widest">Grand Finale</span>
+                            </div>
+                        )}
                         <motion.button
                             whileTap={{ scale: 0.9 }}
                             onClick={handleShare}
@@ -334,6 +365,24 @@ export default function FixtureDetailPage({
                             )}
                         </motion.button>
                     </div>
+                    {isFinal && (
+                        <div className="absolute top-16 md:top-20 left-0 right-0 flex flex-col items-center pointer-events-none px-4">
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="flex flex-col items-center"
+                            >
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="h-px w-6 md:w-12 bg-gradient-to-r from-transparent to-afcon-gold"></div>
+                                    <Trophy className="w-5 h-5 md:w-8 md:h-8 text-afcon-gold animate-bounce" />
+                                    <div className="h-px w-6 md:w-12 bg-gradient-to-l from-transparent to-afcon-gold"></div>
+                                </div>
+                                <h1 className="text-xl md:text-4xl font-display font-black text-white uppercase tracking-[0.2em] text-center drop-shadow-[0_0_20px_rgba(234,179,8,0.5)]">
+                                    AFCON 2025 <span className="text-afcon-gold">Grand Finale</span>
+                                </h1>
+                            </motion.div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -756,6 +805,97 @@ export default function FixtureDetailPage({
                 homeTeam={fixture.homeTeamName}
                 awayTeam={fixture.awayTeamName}
             />
+
+            {/* Winner Celebration Overlay - Ultra Premium */}
+            <AnimatePresence>
+                {showCelebration && actualWinner && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                    >
+                        {/* Confetti Particles */}
+                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                            {[...Array(100)].map((_, i) => (
+                                <motion.div
+                                    key={i}
+                                    initial={{
+                                        x: (Math.random() * 100) + '%',
+                                        y: -50,
+                                        rotate: 0,
+                                        scale: Math.random() * 0.5 + 0.5
+                                    }}
+                                    animate={{
+                                        y: '120vh',
+                                        rotate: 720 * (Math.random() > 0.5 ? 1 : -1),
+                                        x: (Math.random() * 100 + (Math.random() - 0.5) * 40) + '%'
+                                    }}
+                                    transition={{
+                                        duration: 4 + Math.random() * 6,
+                                        repeat: Infinity,
+                                        ease: "linear",
+                                        delay: Math.random() * 8
+                                    }}
+                                    className="absolute w-2 h-2 md:w-3 md:h-3 rounded-sm shadow-sm"
+                                    style={{
+                                        backgroundColor: ['#EAB308', '#22C55E', '#3B82F6', '#EF4444', '#FFFFFF', '#FFD700'][Math.floor(Math.random() * 6)]
+                                    }}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Winner Card */}
+                        <motion.div
+                            initial={{ scale: 0.8, y: 100, opacity: 0 }}
+                            animate={{ scale: 1, y: 0, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 border-2 border-afcon-gold/50 rounded-[2.5rem] p-8 md:p-12 shadow-[0_0_100px_rgba(234,179,8,0.4)] text-center max-w-md w-full"
+                        >
+                            <div className="absolute -inset-1 bg-gradient-to-r from-afcon-gold/20 via-transparent to-afcon-gold/20 blur-2xl rounded-[2.5rem] pointer-events-none"></div>
+
+                            <button
+                                onClick={() => setShowCelebration(false)}
+                                className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors z-20"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+
+                            <div className="mb-8 flex justify-center">
+                                <div className="relative">
+                                    <div className="absolute inset-0 bg-afcon-gold blur-3xl opacity-30 animate-pulse"></div>
+                                    <Trophy className="w-24 h-24 md:w-36 md:h-36 text-afcon-gold relative z-10 filter drop-shadow-[0_0_20px_rgba(234,179,8,0.8)]" />
+                                </div>
+                            </div>
+
+                            <motion.span className="text-afcon-gold font-display font-black uppercase tracking-[0.5em] text-xs md:text-sm mb-4 block">AFCON 2025 Champions</motion.span>
+                            <motion.h2 className="text-3xl md:text-6xl font-display font-black text-white uppercase tracking-tighter mb-8 leading-none">
+                                {actualWinner === 'home' ? fixture.homeTeamName : fixture.awayTeamName}
+                            </motion.h2>
+
+                            <motion.div className="flex justify-center mb-10">
+                                <img
+                                    src={actualWinner === 'home' ? fixture.homeTeamLogoUrl : fixture.awayTeamLogoUrl}
+                                    alt="Champion"
+                                    className="w-28 h-28 md:w-40 md:h-40 object-contain drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]"
+                                />
+                            </motion.div>
+
+                            <motion.p className="text-gray-400 text-sm md:text-lg leading-relaxed max-w-[280px] mx-auto">
+                                The journey to the throne is complete. Glory awaits in the halls of history.
+                            </motion.p>
+
+                            <motion.div className="mt-10 flex items-center justify-center gap-3">
+                                <div className="w-16 h-px bg-gradient-to-r from-transparent via-afcon-gold to-afcon-gold/0"></div>
+                                <Star className="w-4 h-4 text-afcon-gold fill-afcon-gold animate-pulse" />
+                                <Star className="w-6 h-6 text-afcon-gold fill-afcon-gold animate-pulse" style={{ animationDelay: '0.2s' }} />
+                                <Star className="w-4 h-4 text-afcon-gold fill-afcon-gold animate-pulse" style={{ animationDelay: '0.4s' }} />
+                                <div className="w-16 h-px bg-gradient-to-l from-transparent via-afcon-gold to-afcon-gold/0"></div>
+                            </motion.div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
@@ -777,8 +917,8 @@ function StatRow({
     const awayPercent = total > 0 ? (away / total) * 100 : 50;
 
     return (
-        <div>
-            <div className="flex items-center justify-between text-sm mb-1">
+        <div className="space-y-1">
+            <div className="flex items-center justify-between text-sm">
                 <span className="text-black dark:text-white font-medium">{home}{unit}</span>
                 <span className="text-gray-600 dark:text-gray-500 text-xs">{label}</span>
                 <span className="text-black dark:text-white font-medium">{away}{unit}</span>
@@ -789,9 +929,13 @@ function StatRow({
                     style={{ width: `${homePercent}%` }}
                 />
                 <div
-                    className="bg-gray-600 rounded-r-full"
-                    style={{ width: `${awayPercent}%` }}
-                />
+                    className="bg-gray-200 dark:bg-gray-800 rounded-r-full flex-1"
+                >
+                    <div
+                        className="bg-gray-600 dark:bg-gray-500 h-full rounded-r-full"
+                        style={{ width: `${awayPercent}%`, float: 'right' }}
+                    />
+                </div>
             </div>
         </div>
     );

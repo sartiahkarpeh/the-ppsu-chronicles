@@ -79,23 +79,7 @@ export default function FinalCountdown({ targetDate, venue, fixtureId }: FinalCo
     };
 
     if (isExpired) {
-        return (
-            <div className="flex flex-col items-center animate-fade-in-up">
-                <div className="relative mb-6">
-                    <div className="absolute -inset-10 bg-afcon-gold/20 blur-3xl rounded-full animate-pulse"></div>
-                    <div className="relative flex items-center gap-6">
-                        <Trophy className="w-10 h-10 md:w-16 md:h-16 text-afcon-gold animate-bounce" />
-                        <span className="text-4xl md:text-6xl lg:text-7xl font-display font-black text-white uppercase tracking-tighter drop-shadow-2xl">
-                            THE ARENA IS OPEN!
-                        </span>
-                        <Trophy className="w-10 h-10 md:w-16 md:h-16 text-afcon-gold animate-bounce" />
-                    </div>
-                </div>
-                <div className="px-6 py-2 bg-afcon-gold text-black font-black uppercase tracking-[0.3em] rounded-full text-sm md:text-base animate-pulse">
-                    Live Coverage in Progress
-                </div>
-            </div>
-        );
+        return null;
     }
 
     return (
