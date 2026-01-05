@@ -51,6 +51,7 @@ export default function FixtureDetailPage({
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
     const FINAL_FIXTURE_ID = 'defhFOoFnIsd8HuLKcTG';
+    const TEST_FINAL_ID = 'iAo14CaKuwZsuFclTp9h';
 
     // Fetch teams first
     useEffect(() => {
@@ -243,7 +244,7 @@ export default function FixtureDetailPage({
         });
     };
 
-    const isFinal = fixture?.id === FINAL_FIXTURE_ID;
+    const isFinal = fixture && (fixture.id === FINAL_FIXTURE_ID || fixture.id === TEST_FINAL_ID || fixture.groupOrStage?.toLowerCase().includes('final'));
     const actualWinner = fixture?.status === 'ft' ? (
         (fixture.homeScore || 0) > (fixture.awayScore || 0) ? 'home' :
             (fixture.awayScore || 0) > (fixture.homeScore || 0) ? 'away' :
@@ -318,14 +319,14 @@ export default function FixtureDetailPage({
         <div className="min-h-screen bg-gray-50 dark:bg-[#0f0f13]">
             {/* Stadium Background with Gradient */}
             <div
-                className="relative h-[280px] bg-cover bg-center"
+                className={`relative ${isFinal ? 'h-[340px]' : 'h-[280px]'} bg-cover bg-center`}
                 style={{
                     backgroundImage: `linear-gradient(to bottom, rgba(15, 15, 19, 0.3), rgba(15, 15, 19, 0.9)), url('/stadium-bg.jpg')`,
                     backgroundColor: '#1a1a24',
                 }}
             >
-                {/* Top Header Icons */}
-                <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 pt-6">
+                {/* Top Header Icons - Always at the very top */}
+                <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 pt-4 z-20">
                     <motion.button
                         whileTap={{ scale: 0.9 }}
                         onClick={() => router.push('/afcon25/fixtures')}
@@ -335,12 +336,6 @@ export default function FixtureDetailPage({
                     </motion.button>
 
                     <div className="flex items-center gap-2">
-                        {isFinal && (
-                            <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-afcon-gold/20 backdrop-blur-md rounded-full border border-afcon-gold/30 mr-2">
-                                <Trophy className="w-3.5 h-3.5 text-afcon-gold" />
-                                <span className="text-[10px] font-black text-afcon-gold uppercase tracking-widest">Grand Finale</span>
-                            </div>
-                        )}
                         <motion.button
                             whileTap={{ scale: 0.9 }}
                             onClick={handleShare}
@@ -365,25 +360,107 @@ export default function FixtureDetailPage({
                             )}
                         </motion.button>
                     </div>
-                    {isFinal && (
-                        <div className="absolute top-16 md:top-20 left-0 right-0 flex flex-col items-center pointer-events-none px-4">
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="flex flex-col items-center"
-                            >
-                                <div className="flex items-center gap-3 mb-3">
-                                    <div className="h-px w-6 md:w-12 bg-gradient-to-r from-transparent to-afcon-gold"></div>
-                                    <Trophy className="w-5 h-5 md:w-8 md:h-8 text-afcon-gold animate-bounce" />
-                                    <div className="h-px w-6 md:w-12 bg-gradient-to-l from-transparent to-afcon-gold"></div>
-                                </div>
-                                <h1 className="text-xl md:text-4xl font-display font-black text-white uppercase tracking-[0.2em] text-center drop-shadow-[0_0_20px_rgba(234,179,8,0.5)]">
-                                    AFCON 2025 <span className="text-afcon-gold">Grand Finale</span>
-                                </h1>
-                            </motion.div>
-                        </div>
-                    )}
                 </div>
+
+                {/* AFCON 2025 GRAND FINALE - Banner below icons for Finals */}
+                {isFinal && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+                        className="absolute top-16 left-0 right-0 z-10"
+                    >
+                        <div className="relative mx-4 bg-black/40 backdrop-blur-md rounded-2xl border border-afcon-gold/30 overflow-hidden">
+                            {/* Animated background shimmer */}
+                            <motion.div
+                                animate={{ x: ['-100%', '100%'] }}
+                                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                className="absolute inset-0 bg-gradient-to-r from-transparent via-afcon-gold/10 to-transparent"
+                            />
+
+                            {/* Golden borders */}
+                            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-afcon-gold to-transparent" />
+                            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-afcon-gold to-transparent" />
+
+                            <div className="relative py-4 px-4">
+                                <div className="flex flex-col items-center justify-center gap-2">
+                                    {/* Trophy with glow */}
+                                    <motion.div
+                                        animate={{
+                                            scale: [1, 1.1, 1],
+                                            filter: [
+                                                'drop-shadow(0 0 8px rgba(234,179,8,0.4))',
+                                                'drop-shadow(0 0 20px rgba(234,179,8,0.8))',
+                                                'drop-shadow(0 0 8px rgba(234,179,8,0.4))'
+                                            ]
+                                        }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                    >
+                                        <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-afcon-gold" />
+                                    </motion.div>
+
+                                    {/* Main Title */}
+                                    <div className="text-center">
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: 0.3, duration: 0.5 }}
+                                        >
+                                            <span className="block text-[10px] sm:text-xs tracking-[0.5em] text-white font-bold mb-1">
+                                                AFCON 2025
+                                            </span>
+                                            <h1 className="text-xl sm:text-2xl md:text-3xl font-display font-black uppercase tracking-tight">
+                                                <span className="bg-gradient-to-b from-afcon-gold via-[#fff1be] to-afcon-gold bg-clip-text text-transparent">
+                                                    GRAND FINALE
+                                                </span>
+                                            </h1>
+                                        </motion.div>
+
+                                        {/* Decorative line */}
+                                        <motion.div
+                                            initial={{ opacity: 0, scaleX: 0 }}
+                                            animate={{ opacity: 1, scaleX: 1 }}
+                                            transition={{ delay: 0.6, duration: 0.8 }}
+                                            className="flex items-center justify-center gap-2 mt-2"
+                                        >
+                                            <div className="h-px w-6 sm:w-12 bg-gradient-to-r from-transparent to-afcon-gold/60" />
+                                            <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-afcon-gold/80 fill-afcon-gold/80" />
+                                            <span className="text-[7px] sm:text-[9px] text-white/70 uppercase tracking-[0.15em] font-medium">
+                                                The Battle for Africa&apos;s Crown
+                                            </span>
+                                            <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-afcon-gold/80 fill-afcon-gold/80" />
+                                            <div className="h-px w-6 sm:w-12 bg-gradient-to-l from-transparent to-afcon-gold/60" />
+                                        </motion.div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Sparkle particles */}
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                                {[...Array(6)].map((_, i) => (
+                                    <motion.div
+                                        key={i}
+                                        initial={{ opacity: 0 }}
+                                        animate={{
+                                            opacity: [0, 1, 0],
+                                            scale: [0.5, 1, 0.5],
+                                        }}
+                                        transition={{
+                                            duration: 2,
+                                            repeat: Infinity,
+                                            delay: i * 0.4,
+                                        }}
+                                        className="absolute w-1 h-1 bg-afcon-gold rounded-full"
+                                        style={{
+                                            left: `${15 + i * 14}%`,
+                                            top: `${20 + (i % 2) * 60}%`,
+                                        }}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
             </div>
 
             {/* Live Stream - Shows when broadcasting */}
@@ -786,14 +863,16 @@ export default function FixtureDetailPage({
             />
 
             {/* Toast */}
-            {toast && (
-                <Toast
-                    message={toast.message}
-                    type={toast.type}
-                    isVisible={!!toast}
-                    onClose={() => setToast(null)}
-                />
-            )}
+            {
+                toast && (
+                    <Toast
+                        message={toast.message}
+                        type={toast.type}
+                        isVisible={!!toast}
+                        onClose={() => setToast(null)}
+                    />
+                )
+            }
 
             {/* Notification Permission Prompt */}
             <NotificationPrompt
@@ -806,97 +885,292 @@ export default function FixtureDetailPage({
                 awayTeam={fixture.awayTeamName}
             />
 
-            {/* Winner Celebration Overlay - Ultra Premium */}
+            {/* Winner Celebration Overlay - Ultra Premium Cinematic Mobile-First */}
             <AnimatePresence>
                 {showCelebration && actualWinner && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/95 backdrop-blur-xl overflow-hidden"
                     >
-                        {/* Confetti Particles */}
+                        {/* Dramatic Radial Background */}
+                        <div className="absolute inset-0">
+                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(234,179,8,0.15)_0%,transparent_70%)]" />
+                            <motion.div
+                                animate={{
+                                    scale: [1, 1.2, 1],
+                                    opacity: [0.3, 0.5, 0.3]
+                                }}
+                                transition={{ duration: 4, repeat: Infinity }}
+                                className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(234,179,8,0.1)_0%,transparent_50%)]"
+                            />
+                        </div>
+
+                        {/* Spectacular Fireworks - Multi-layer */}
                         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                            {[...Array(100)].map((_, i) => (
+                            {/* Large Burst Fireworks */}
+                            {[...Array(8)].map((_, burstIdx) => (
+                                <div
+                                    key={`burst-${burstIdx}`}
+                                    className="absolute"
+                                    style={{
+                                        left: `${10 + (burstIdx * 12) % 80}%`,
+                                        top: `${10 + (burstIdx * 8) % 50}%`
+                                    }}
+                                >
+                                    {[...Array(20)].map((_, i) => (
+                                        <motion.div
+                                            key={i}
+                                            initial={{ scale: 0, opacity: 1, x: 0, y: 0 }}
+                                            animate={{
+                                                scale: [0, 1.5, 0.8, 0],
+                                                opacity: [1, 1, 0.5, 0],
+                                                x: Math.cos(i * 18 * Math.PI / 180) * (80 + burstIdx * 15),
+                                                y: Math.sin(i * 18 * Math.PI / 180) * (80 + burstIdx * 15),
+                                            }}
+                                            transition={{
+                                                duration: 2.5,
+                                                delay: burstIdx * 0.8 + 0.5,
+                                                repeat: Infinity,
+                                                repeatDelay: 4
+                                            }}
+                                            className="absolute w-2 h-2 sm:w-3 sm:h-3 rounded-full"
+                                            style={{
+                                                backgroundColor: ['#EAB308', '#FBBF24', '#FCD34D', '#FFFFFF', '#F59E0B'][i % 5],
+                                                boxShadow: `0 0 20px ${['#EAB308', '#FBBF24', '#FCD34D'][i % 3]}`
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            ))}
+
+                            {/* Sparkle Trail Fireworks */}
+                            {[...Array(6)].map((_, idx) => (
                                 <motion.div
-                                    key={i}
+                                    key={`trail-${idx}`}
                                     initial={{
-                                        x: (Math.random() * 100) + '%',
-                                        y: -50,
-                                        rotate: 0,
-                                        scale: Math.random() * 0.5 + 0.5
+                                        x: `${20 + idx * 15}%`,
+                                        y: '100%',
+                                        opacity: 0
                                     }}
                                     animate={{
-                                        y: '120vh',
-                                        rotate: 720 * (Math.random() > 0.5 ? 1 : -1),
-                                        x: (Math.random() * 100 + (Math.random() - 0.5) * 40) + '%'
+                                        y: ['100%', '30%', '20%'],
+                                        opacity: [0, 1, 0],
+                                        scale: [0.5, 1, 1.5]
+                                    }}
+                                    transition={{
+                                        duration: 1.5,
+                                        delay: idx * 1.2 + 1,
+                                        repeat: Infinity,
+                                        repeatDelay: 5
+                                    }}
+                                    className="absolute w-3 h-3 rounded-full bg-afcon-gold"
+                                    style={{
+                                        boxShadow: '0 0 30px rgba(234,179,8,0.8), 0 0 60px rgba(234,179,8,0.4)'
+                                    }}
+                                />
+                            ))}
+
+                            {/* Confetti Strips */}
+                            {[...Array(50)].map((_, i) => (
+                                <motion.div
+                                    key={`confetti-${i}`}
+                                    initial={{
+                                        x: `${Math.random() * 100}%`,
+                                        y: -20,
+                                        rotate: 0,
+                                        opacity: 0
+                                    }}
+                                    animate={{
+                                        y: '110vh',
+                                        rotate: 720 + Math.random() * 720,
+                                        opacity: [0, 1, 1, 0.5]
                                     }}
                                     transition={{
                                         duration: 4 + Math.random() * 6,
                                         repeat: Infinity,
-                                        ease: "linear",
-                                        delay: Math.random() * 8
+                                        delay: Math.random() * 8,
+                                        ease: "linear"
                                     }}
-                                    className="absolute w-2 h-2 md:w-3 md:h-3 rounded-sm shadow-sm"
+                                    className="absolute"
                                     style={{
-                                        backgroundColor: ['#EAB308', '#22C55E', '#3B82F6', '#EF4444', '#FFFFFF', '#FFD700'][Math.floor(Math.random() * 6)]
+                                        width: `${4 + Math.random() * 8}px`,
+                                        height: `${8 + Math.random() * 16}px`,
+                                        backgroundColor: ['#EAB308', '#FBBF24', '#FFFFFF', '#22C55E', '#3B82F6', '#EF4444'][i % 6],
+                                        borderRadius: '2px'
+                                    }}
+                                />
+                            ))}
+
+                            {/* Golden Shimmer Particles */}
+                            {[...Array(30)].map((_, i) => (
+                                <motion.div
+                                    key={`shimmer-${i}`}
+                                    animate={{
+                                        opacity: [0, 1, 0],
+                                        scale: [0, 1, 0],
+                                    }}
+                                    transition={{
+                                        duration: 2,
+                                        repeat: Infinity,
+                                        delay: Math.random() * 6,
+                                    }}
+                                    className="absolute w-1 h-1 bg-afcon-gold rounded-full"
+                                    style={{
+                                        left: `${Math.random() * 100}%`,
+                                        top: `${Math.random() * 100}%`,
+                                        boxShadow: '0 0 10px rgba(234,179,8,0.6)'
                                     }}
                                 />
                             ))}
                         </div>
 
-                        {/* Winner Card */}
+                        {/* Refined Champion Card - Mobile First */}
                         <motion.div
-                            initial={{ scale: 0.8, y: 100, opacity: 0 }}
+                            initial={{ scale: 0.7, y: 80, opacity: 0 }}
                             animate={{ scale: 1, y: 0, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
-                            className="relative bg-gradient-to-br from-gray-900 via-black to-gray-900 border-2 border-afcon-gold/50 rounded-[2.5rem] p-8 md:p-12 shadow-[0_0_100px_rgba(234,179,8,0.4)] text-center max-w-md w-full"
+                            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
+                            className="relative bg-gradient-to-b from-black/60 to-black/80 backdrop-blur-3xl border-2 border-afcon-gold/50 rounded-[2rem] sm:rounded-[3rem] p-6 sm:p-10 md:p-16 shadow-[0_0_100px_rgba(234,179,8,0.3)] text-center max-w-sm sm:max-w-lg w-full mx-2 overflow-hidden"
                         >
-                            <div className="absolute -inset-1 bg-gradient-to-r from-afcon-gold/20 via-transparent to-afcon-gold/20 blur-2xl rounded-[2.5rem] pointer-events-none"></div>
+                            {/* Animated border glow */}
+                            <motion.div
+                                animate={{ opacity: [0.3, 0.6, 0.3] }}
+                                transition={{ duration: 2, repeat: Infinity }}
+                                className="absolute inset-0 rounded-[2rem] sm:rounded-[3rem] border-2 border-afcon-gold/30 pointer-events-none"
+                            />
 
+                            {/* Inner glow effects */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-afcon-gold/10 via-transparent to-transparent pointer-events-none rounded-[2rem] sm:rounded-[3rem]" />
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-afcon-gold to-transparent" />
+
+                            {/* Close Button */}
                             <button
                                 onClick={() => setShowCelebration(false)}
-                                className="absolute top-6 right-6 text-gray-400 hover:text-white transition-colors z-20"
+                                className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white/40 hover:text-white transition-colors z-20 p-2 hover:bg-white/10 rounded-full"
                             >
-                                <X className="w-6 h-6" />
+                                <X className="w-5 h-5 sm:w-6 sm:h-6" />
                             </button>
 
-                            <div className="mb-8 flex justify-center">
-                                <div className="relative">
-                                    <div className="absolute inset-0 bg-afcon-gold blur-3xl opacity-30 animate-pulse"></div>
-                                    <Trophy className="w-24 h-24 md:w-36 md:h-36 text-afcon-gold relative z-10 filter drop-shadow-[0_0_20px_rgba(234,179,8,0.8)]" />
-                                </div>
+                            {/* Trophy Section */}
+                            <div className="mb-6 sm:mb-10 flex justify-center relative">
+                                <motion.div
+                                    animate={{
+                                        scale: [1, 1.05, 1],
+                                        filter: [
+                                            'drop-shadow(0 0 30px rgba(234,179,8,0.5))',
+                                            'drop-shadow(0 0 60px rgba(234,179,8,0.8))',
+                                            'drop-shadow(0 0 30px rgba(234,179,8,0.5))'
+                                        ]
+                                    }}
+                                    transition={{ duration: 3, repeat: Infinity }}
+                                    className="relative z-10"
+                                >
+                                    <Trophy className="w-20 h-20 sm:w-32 sm:h-32 md:w-40 md:h-40 text-afcon-gold" />
+                                </motion.div>
+                                {/* Pulsing halo */}
+                                <motion.div
+                                    animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }}
+                                    transition={{ duration: 3, repeat: Infinity }}
+                                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 sm:w-48 sm:h-48 bg-afcon-gold/20 blur-[60px] rounded-full"
+                                />
                             </div>
 
-                            <motion.span className="text-afcon-gold font-display font-black uppercase tracking-[0.5em] text-xs md:text-sm mb-4 block">AFCON 2025 Champions</motion.span>
-                            <motion.h2 className="text-3xl md:text-6xl font-display font-black text-white uppercase tracking-tighter mb-8 leading-none">
-                                {actualWinner === 'home' ? fixture.homeTeamName : fixture.awayTeamName}
-                            </motion.h2>
+                            {/* Champion Info */}
+                            <motion.div
+                                initial={{ y: 30, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                transition={{ delay: 0.4 }}
+                            >
+                                <span className="text-afcon-gold font-display font-black uppercase tracking-[0.3em] sm:tracking-[0.5em] text-[8px] sm:text-xs mb-4 sm:mb-6 block">
+                                    🏆 AFCON 2025 CHAMPIONS 🏆
+                                </span>
+                                <h2 className="text-3xl sm:text-5xl md:text-6xl font-display font-black text-white uppercase tracking-tight mb-6 sm:mb-8 leading-[0.95]">
+                                    <motion.span
+                                        animate={{
+                                            textShadow: [
+                                                '0 0 20px rgba(234,179,8,0.3)',
+                                                '0 0 40px rgba(234,179,8,0.6)',
+                                                '0 0 20px rgba(234,179,8,0.3)'
+                                            ]
+                                        }}
+                                        transition={{ duration: 2, repeat: Infinity }}
+                                    >
+                                        {actualWinner === 'home' ? fixture.homeTeamName : fixture.awayTeamName}
+                                    </motion.span>
+                                </h2>
 
-                            <motion.div className="flex justify-center mb-10">
-                                <img
-                                    src={actualWinner === 'home' ? fixture.homeTeamLogoUrl : fixture.awayTeamLogoUrl}
-                                    alt="Champion"
-                                    className="w-28 h-28 md:w-40 md:h-40 object-contain drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]"
-                                />
-                            </motion.div>
+                                {/* Winner Flag */}
+                                <div className="flex justify-center mb-8 sm:mb-10 relative">
+                                    <div className="relative">
+                                        <motion.img
+                                            initial={{ scale: 0, rotate: -30 }}
+                                            animate={{ scale: 1, rotate: 0 }}
+                                            transition={{ type: 'spring', damping: 12, delay: 0.6 }}
+                                            src={actualWinner === 'home' ? fixture.homeTeamLogoUrl : fixture.awayTeamLogoUrl}
+                                            alt="Champion"
+                                            className="w-24 h-24 sm:w-36 sm:h-36 md:w-44 md:h-44 object-contain z-10 filter drop-shadow-[0_15px_30px_rgba(0,0,0,0.8)]"
+                                        />
+                                        {/* Floating stars around flag */}
+                                        {[...Array(5)].map((_, i) => (
+                                            <motion.div
+                                                key={i}
+                                                animate={{
+                                                    opacity: [0, 1, 0],
+                                                    scale: [0.5, 1, 0.5],
+                                                    y: [0, -20, 0]
+                                                }}
+                                                transition={{
+                                                    delay: 1 + i * 0.5,
+                                                    duration: 2,
+                                                    repeat: Infinity,
+                                                    repeatDelay: 2
+                                                }}
+                                                className="absolute text-afcon-gold"
+                                                style={{
+                                                    left: `${-20 + i * 40}%`,
+                                                    top: `${i % 2 === 0 ? -10 : 90}%`
+                                                }}
+                                            >
+                                                <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-afcon-gold" />
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </div>
 
-                            <motion.p className="text-gray-400 text-sm md:text-lg leading-relaxed max-w-[280px] mx-auto">
-                                The journey to the throne is complete. Glory awaits in the halls of history.
-                            </motion.p>
+                                {/* Quote */}
+                                <p className="text-white/50 text-xs sm:text-sm md:text-base leading-relaxed italic max-w-[280px] sm:max-w-[320px] mx-auto">
+                                    &quot;A historic triumph for the ages. Glory is yours.&quot;
+                                </p>
 
-                            <motion.div className="mt-10 flex items-center justify-center gap-3">
-                                <div className="w-16 h-px bg-gradient-to-r from-transparent via-afcon-gold to-afcon-gold/0"></div>
-                                <Star className="w-4 h-4 text-afcon-gold fill-afcon-gold animate-pulse" />
-                                <Star className="w-6 h-6 text-afcon-gold fill-afcon-gold animate-pulse" style={{ animationDelay: '0.2s' }} />
-                                <Star className="w-4 h-4 text-afcon-gold fill-afcon-gold animate-pulse" style={{ animationDelay: '0.4s' }} />
-                                <div className="w-16 h-px bg-gradient-to-l from-transparent via-afcon-gold to-afcon-gold/0"></div>
+                                {/* Decorative footer */}
+                                <motion.div
+                                    initial={{ opacity: 0, scaleX: 0 }}
+                                    animate={{ opacity: 1, scaleX: 1 }}
+                                    transition={{ delay: 1, duration: 0.8 }}
+                                    className="mt-8 sm:mt-10 flex items-center justify-center gap-3 sm:gap-4 opacity-60"
+                                >
+                                    <div className="h-px w-6 sm:w-10 bg-gradient-to-r from-transparent to-afcon-gold" />
+                                    <div className="flex gap-1">
+                                        {[...Array(3)].map((_, i) => (
+                                            <motion.div
+                                                key={i}
+                                                animate={{ scale: [1, 1.2, 1] }}
+                                                transition={{ delay: 1.2 + i * 0.2, duration: 0.5, repeat: Infinity, repeatDelay: 3 }}
+                                            >
+                                                <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-afcon-gold fill-afcon-gold" />
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                    <div className="h-px w-6 sm:w-10 bg-gradient-to-l from-transparent to-afcon-gold" />
+                                </motion.div>
                             </motion.div>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 }
 
