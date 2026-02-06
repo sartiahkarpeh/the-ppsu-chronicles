@@ -116,7 +116,7 @@ export default function SuperAdminDashboard() {
     student_voice: { name: 'Student Voice Submissions', collectionName: 'submissions', fields: [] },
     predictions: { name: '⚽ Match Predictions', collectionName: null, fields: [], isExternal: true, path: '/admin/predictions' },
     afcon25: { name: 'AFCON 2025', collectionName: null, fields: [], isExternal: true, path: '/admin/afcon25' },
-
+    valentines: { name: '💕 Valentine\'s Exchange', collectionName: null, fields: [], isExternal: true, path: '/admin/valentines' },
     contact_messages: { name: 'Contact Messages', collectionName: 'contactmessages', fields: [] },
   }), []);
 
