@@ -10,6 +10,7 @@ const navLinks = [
   { href: '/media', label: 'Media' },
   { href: '/events', label: 'Events' },
   { href: '/student-voice', label: 'Student Voice' },
+  { href: '/diaries', label: 'Diaries' },
   { href: '/contact', label: 'Contact' },
 ];
 

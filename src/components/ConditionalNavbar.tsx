@@ -6,8 +6,8 @@ import Navbar from './Navbar';
 export default function ConditionalNavbar() {
     const pathname = usePathname();
 
-    // Hide the global navbar on AFCON admin pages (they have their own sidebar)
-    if (pathname?.startsWith('/admin/afcon25')) {
+    // Hide the global navbar on pages with their own navigation
+    if (pathname?.startsWith('/admin/afcon25') || pathname?.startsWith('/diaries')) {
         return null;
     }
 
