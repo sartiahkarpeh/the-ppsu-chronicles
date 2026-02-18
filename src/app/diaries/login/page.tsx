@@ -31,11 +31,20 @@ export default function DiaryLoginPage() {
         }
     }, [user, authLoading, router]);
     const handlePostLogin = async (uid: string) => {
-        const profile = await getProfile(uid);
-        if (profile) {
-            router.push('/diaries');
-        } else {
-            router.push('/diaries/onboarding');
+        console.log('DiaryLoginPage: handlePostLogin for', uid);
+        try {
+            const profile = await getProfile(uid);
+            console.log('DiaryLoginPage: Profile found:', profile ? 'yes' : 'no');
+            if (profile) {
+                console.log('DiaryLoginPage: Redirecting to /diaries');
+                router.push('/diaries');
+            } else {
+                console.log('DiaryLoginPage: Redirecting to /diaries/onboarding');
+                router.push('/diaries/onboarding');
+            }
+        } catch (err) {
+            console.error('DiaryLoginPage: handlePostLogin error:', err);
+            toast.error('Failed to load profile. Please try refreshing.');
         }
     };
 
@@ -65,15 +74,22 @@ export default function DiaryLoginPage() {
 
     // Handle redirect result on mount (for mobile Google sign-in fallback)
     useEffect(() => {
+        console.log('DiaryLoginPage: Checking for redirect result...');
         getRedirectResult(auth)
             .then(async (result) => {
                 if (result?.user) {
-                    toast.success('Welcome!');
+                    console.log('DiaryLoginPage: Redirect result success for', result.user.uid);
+                    toast.success('Welcome back!');
                     await handlePostLogin(result.user.uid);
+                } else {
+                    console.log('DiaryLoginPage: No redirect result found.');
                 }
             })
             .catch((err) => {
-                console.error('Redirect result error:', err);
+                console.error('DiaryLoginPage: Redirect result error:', err);
+                if (err.code !== 'auth/popup-closed-by-user') {
+                    toast.error(`Sign-in error: ${err.message}`);
+                }
             });
     }, []);
 

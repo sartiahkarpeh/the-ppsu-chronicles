@@ -34,11 +34,20 @@ export default function DiaryRegisterPage() {
         }
     }, [user, authLoading, router]);
     const handlePostAuth = async (uid: string) => {
-        const profile = await getProfile(uid);
-        if (profile) {
-            router.push('/diaries');
-        } else {
-            router.push('/diaries/onboarding');
+        console.log('DiaryRegisterPage: handlePostAuth for', uid);
+        try {
+            const profile = await getProfile(uid);
+            console.log('DiaryRegisterPage: Profile found:', profile ? 'yes' : 'no');
+            if (profile) {
+                console.log('DiaryRegisterPage: Redirecting to /diaries');
+                router.push('/diaries');
+            } else {
+                console.log('DiaryRegisterPage: Redirecting to /diaries/onboarding');
+                router.push('/diaries/onboarding');
+            }
+        } catch (err) {
+            console.error('DiaryRegisterPage: handlePostAuth error:', err);
+            toast.error('Failed to load profile. Please try refreshing.');
         }
     };
 
@@ -83,15 +92,22 @@ export default function DiaryRegisterPage() {
 
     // Handle redirect result on mount
     useEffect(() => {
+        console.log('DiaryRegisterPage: Checking for redirect result...');
         getRedirectResult(auth)
             .then(async (result) => {
                 if (result?.user) {
+                    console.log('DiaryRegisterPage: Redirect result success for', result.user.uid);
                     toast.success('Welcome!');
                     await handlePostAuth(result.user.uid);
+                } else {
+                    console.log('DiaryRegisterPage: No redirect result found.');
                 }
             })
             .catch((err) => {
-                console.error('Redirect result error:', err);
+                console.error('DiaryRegisterPage: Redirect result error:', err);
+                if (err.code !== 'auth/popup-closed-by-user') {
+                    toast.error(`Sign-in error: ${err.message}`);
+                }
             });
     }, []);
 
