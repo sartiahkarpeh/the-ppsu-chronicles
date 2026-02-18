@@ -19,7 +19,7 @@ export default function OnboardingPage() {
     const [bio, setBio] = useState('');
     const [program, setProgram] = useState('');
     const [year, setYear] = useState('');
-    const [email, setEmail] = useState('');
+    const [emailPrefix, setEmailPrefix] = useState('');
     const [avatar, setAvatar] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
@@ -28,7 +28,12 @@ export default function OnboardingPage() {
         if (!loading && profile) router.push('/diaries');
         if (user) {
             setDisplayName(user.displayName || '');
-            setEmail(user.email || '');
+            // Only pre-fill prefix if user is already using a university email
+            if (user.email?.toLowerCase().endsWith('@ppsu.ac.in')) {
+                setEmailPrefix(user.email.split('@')[0]);
+            } else {
+                setEmailPrefix('');
+            }
         }
     }, [loading, user, profile, router]);
 
@@ -47,8 +52,15 @@ export default function OnboardingPage() {
         e.preventDefault();
         if (!user) return;
 
-        if (!validatePPSUEmail(email)) {
-            toast.error('Please use your @ppsu.ac.in email address');
+        const universityEmail = `${emailPrefix.trim().toLowerCase()}@ppsu.ac.in`;
+
+        if (!emailPrefix.trim()) {
+            toast.error('Please enter your university ID prefix');
+            return;
+        }
+
+        if (!validatePPSUEmail(universityEmail)) {
+            toast.error('Invalid university email format');
             return;
         }
 
@@ -61,7 +73,7 @@ export default function OnboardingPage() {
                 bio: bio.trim().slice(0, 160),
                 program: program.trim(),
                 year: year.trim(),
-                universityEmail: email.trim().toLowerCase(),
+                universityEmail: universityEmail,
                 role,
                 isApproved: role === 'reader', // Readers are auto-approved, writers need admin approval
                 followersCount: 0,
@@ -158,13 +170,20 @@ export default function OnboardingPage() {
 
                             <div>
                                 <label className="block text-sm font-medium text-[#1a1a1a] mb-1">University Email *</label>
-                                <input
-                                    type="email" required value={email}
-                                    onChange={e => setEmail(e.target.value)}
-                                    placeholder="yourname@ppsu.ac.in"
-                                    className="w-full px-4 py-2.5 border border-[#e5e5e5] rounded-lg focus:outline-none focus:border-[#FF6719]"
-                                />
-                                <p className="text-xs text-[#6b6b6b] mt-1">Must end with @ppsu.ac.in</p>
+                                <div className="flex items-center border border-[#e5e5e5] rounded-lg focus-within:border-[#FF6719] bg-white transition-colors overflow-hidden">
+                                    <input
+                                        type="text"
+                                        required
+                                        value={emailPrefix}
+                                        onChange={e => setEmailPrefix(e.target.value.replace(/\s+/g, '').split('@')[0])}
+                                        placeholder="e.g. 21BECEG001"
+                                        className="flex-1 px-4 py-2.5 focus:outline-none bg-transparent min-w-0"
+                                    />
+                                    <span className="px-4 py-2.5 bg-[#f9f9f9] text-[#6b6b6b] border-l border-[#e5e5e5] select-none font-medium">
+                                        @ppsu.ac.in
+                                    </span>
+                                </div>
+                                <p className="text-xs text-[#6b6b6b] mt-1">Enter your student/employee ID prefix</p>
                             </div>
 
                             <div>
