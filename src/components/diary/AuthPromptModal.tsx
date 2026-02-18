@@ -56,13 +56,37 @@ export default function AuthPromptModal({ isOpen, onClose, action = 'general' }:
 
     const handleGoogleSignIn = async () => {
         setLoading(true);
+        console.log('AuthPromptModal: Initiating Google Sign-In...');
         try {
             const provider = new GoogleAuthProvider();
-            // Use redirect for reliable cross-domain and mobile sign-in
-            await signInWithRedirect(auth, provider);
+            try {
+                // Try popup first
+                const cred = await signInWithPopup(auth, provider);
+                console.log('AuthPromptModal: Popup success for', cred.user.uid);
+                const profile = await getProfile(cred.user.uid);
+                toast.success('Welcome!');
+                onClose();
+                if (!profile) {
+                    router.push('/diaries/onboarding');
+                }
+            } catch (popupErr: any) {
+                console.log('AuthPromptModal: Popup error code:', popupErr.code);
+                // Fallback to redirect if blocked or mobile
+                if (
+                    popupErr.code === 'auth/popup-blocked' ||
+                    popupErr.code === 'auth/popup-closed-by-user' ||
+                    popupErr.code === 'auth/cancelled-popup-request' ||
+                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                ) {
+                    console.log('AuthPromptModal: Falling back to redirect...');
+                    await signInWithRedirect(auth, provider);
+                } else {
+                    throw popupErr;
+                }
+            }
         } catch (err: any) {
-            console.error('Google sign-in error:', err);
-            toast.error('Sign-in failed. Please try again.');
+            console.error('AuthPromptModal: Google sign-in error:', err);
+            toast.error(`Sign-in failed: ${err.message}`);
             setLoading(false);
         }
     };

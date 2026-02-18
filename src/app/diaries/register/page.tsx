@@ -113,12 +113,33 @@ export default function DiaryRegisterPage() {
 
     const handleGoogleRegister = async () => {
         setLoading(true);
+        console.log('DiaryRegisterPage: Initiating Google Register...');
         try {
             const provider = new GoogleAuthProvider();
-            await signInWithRedirect(auth, provider);
+            try {
+                // Try popup first
+                const result = await signInWithPopup(auth, provider);
+                console.log('DiaryRegisterPage: Popup register success for', result.user.uid);
+                toast.success('Welcome!');
+                await handlePostAuth(result.user.uid);
+            } catch (popupErr: any) {
+                console.log('DiaryRegisterPage: Popup error code:', popupErr.code);
+                // Fallback to redirect for mobile/popup-blocked
+                if (
+                    popupErr.code === 'auth/popup-blocked' ||
+                    popupErr.code === 'auth/popup-closed-by-user' ||
+                    popupErr.code === 'auth/cancelled-popup-request' ||
+                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                ) {
+                    console.log('DiaryRegisterPage: Falling back to redirect...');
+                    await signInWithRedirect(auth, provider);
+                } else {
+                    throw popupErr;
+                }
+            }
         } catch (err: any) {
-            console.error('Google sign-in error:', err);
-            toast.error('Google sign-in failed. Please try again.');
+            console.error('DiaryRegisterPage: Google sign-in error:', err);
+            toast.error(`Sign-in failed: ${err.message}`);
             setLoading(false);
         }
     };

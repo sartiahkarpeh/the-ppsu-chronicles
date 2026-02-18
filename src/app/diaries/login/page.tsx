@@ -95,12 +95,33 @@ export default function DiaryLoginPage() {
 
     const handleGoogleLogin = async () => {
         setLoading(true);
+        console.log('DiaryLoginPage: Initiating Google Login...');
         try {
             const provider = new GoogleAuthProvider();
-            await signInWithRedirect(auth, provider);
+            try {
+                // Try popup first (best for desktop)
+                const result = await signInWithPopup(auth, provider);
+                console.log('DiaryLoginPage: Popup login success for', result.user.uid);
+                toast.success('Welcome back!');
+                await handlePostLogin(result.user.uid);
+            } catch (popupErr: any) {
+                console.log('DiaryLoginPage: Popup error code:', popupErr.code);
+                // If popup is blocked or it's mobile, use redirect
+                if (
+                    popupErr.code === 'auth/popup-blocked' ||
+                    popupErr.code === 'auth/popup-closed-by-user' ||
+                    popupErr.code === 'auth/cancelled-popup-request' ||
+                    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+                ) {
+                    console.log('DiaryLoginPage: Falling back to redirect...');
+                    await signInWithRedirect(auth, provider);
+                } else {
+                    throw popupErr;
+                }
+            }
         } catch (err: any) {
-            console.error('Google sign-in error:', err);
-            toast.error('Google sign-in failed. Please try again.');
+            console.error('DiaryLoginPage: Google sign-in error:', err);
+            toast.error(`Sign-in failed: ${err.message}`);
             setLoading(false);
         }
     };
