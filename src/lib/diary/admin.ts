@@ -15,7 +15,7 @@ export async function getPostAdmin(postId: string): Promise<DiaryPost | null> {
         createdAt: data?.createdAt?.toDate() || null,
         updatedAt: data?.updatedAt?.toDate() || null,
         publishedAt: data?.publishedAt?.toDate() || null,
-    } as DiaryPost;
+    } as any;
 }
 
 export async function getProfileAdmin(userId: string): Promise<DiaryProfile | null> {
@@ -25,8 +25,10 @@ export async function getProfileAdmin(userId: string): Promise<DiaryProfile | nu
     const docSnap = await db.collection('diary_profiles').doc(userId).get();
     if (!docSnap.exists) return null;
 
+    const data = docSnap.data();
     return {
         userId: docSnap.id,
-        ...docSnap.data()
-    } as DiaryProfile;
+        ...data,
+        createdAt: data?.createdAt?.toDate() || null,
+    } as any;
 }

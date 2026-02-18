@@ -35,6 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             images: [
                 {
                     url: imageUrl,
+                    secureUrl: imageUrl,
                     width: 1200,
                     height: 630,
                     alt: title,
@@ -53,6 +54,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             creator: '@PPSUChronicles',
             site: '@PPSUChronicles',
         },
+        alternates: {
+            canonical: postUrl,
+        },
     };
 }
 
@@ -69,14 +73,14 @@ export default async function Page({ params }: Props) {
     // Serialize data for client component
     const serializedPost = {
         ...post,
-        createdAt: post.createdAt?.toISOString(),
-        updatedAt: post.updatedAt?.toISOString(),
-        publishedAt: post.publishedAt?.toISOString(),
+        createdAt: (post as any).createdAt?.toISOString(),
+        updatedAt: (post as any).updatedAt?.toISOString(),
+        publishedAt: (post as any).publishedAt?.toISOString(),
     };
 
     const serializedAuthor = author ? {
         ...author,
-        createdAt: (author.createdAt as any)?.toDate?.()?.toISOString() || author.createdAt?.toISOString(),
+        createdAt: (author as any).createdAt?.toISOString(),
     } : null;
 
     return (

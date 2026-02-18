@@ -31,6 +31,7 @@ export interface DiaryPost {
     tags: string[];
     status: 'draft' | 'published' | 'pending_review';
     publishedAt: Timestamp | null;
+    createdAt: Timestamp;
     updatedAt: Timestamp;
     viewsCount: number;
     likesCount: number;
