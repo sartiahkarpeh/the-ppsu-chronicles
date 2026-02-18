@@ -16,10 +16,7 @@ const lora = Lora({
     display: 'swap',
 });
 
-export const metadata: Metadata = {
-    title: 'Student Diaries | The PPSU Chronicles',
-    description: 'Real voices from P. P. Savani University. Read and publish diary entries, follow your favourite student writers, and subscribe for updates.',
-};
+
 
 export default function DiariesLayout({
     children,

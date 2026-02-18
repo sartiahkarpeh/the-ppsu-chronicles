@@ -1,5 +1,6 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+export const revalidate = 60;
 import { getPostAdmin, getProfileAdmin } from '@/lib/diary/admin';
 import DiaryPostClient from '@/components/diary/DiaryPostClient';
 import { generateExcerpt } from '@/lib/diary/utils';

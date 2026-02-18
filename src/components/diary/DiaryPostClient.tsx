@@ -136,7 +136,11 @@ export default function DiaryPostClient({ postId, initialPost, initialAuthor }: 
                     <div className="flex items-center gap-3 mb-6">
                         <Link href={`/diaries/writers/${post.authorId}`} className="shrink-0">
                             {post.authorAvatar ? (
-                                <img src={post.authorAvatar} alt={post.authorName} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover" />
+                                <div
+                                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-cover bg-center"
+                                    style={{ backgroundImage: `url(${post.authorAvatar})` }}
+                                    aria-label={post.authorName}
+                                />
                             ) : (
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#FF6719] flex items-center justify-center text-white text-base sm:text-lg font-bold">
                                     {post.authorName?.charAt(0)?.toUpperCase()}
