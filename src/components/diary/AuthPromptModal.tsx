@@ -58,32 +58,11 @@ export default function AuthPromptModal({ isOpen, onClose, action = 'general' }:
         setLoading(true);
         try {
             const provider = new GoogleAuthProvider();
-            try {
-                const cred = await signInWithPopup(auth, provider);
-                const profile = await getProfile(cred.user.uid);
-                toast.success('Welcome!');
-                onClose();
-                if (!profile) {
-                    router.push('/diaries/onboarding');
-                }
-            } catch (popupErr: any) {
-                // Fallback to redirect for mobile / popup-blocked
-                if (
-                    popupErr.code === 'auth/popup-blocked' ||
-                    popupErr.code === 'auth/popup-closed-by-user' ||
-                    popupErr.code === 'auth/cancelled-popup-request'
-                ) {
-                    await signInWithRedirect(auth, provider);
-                } else {
-                    throw popupErr;
-                }
-            }
+            // Use redirect for reliable cross-domain and mobile sign-in
+            await signInWithRedirect(auth, provider);
         } catch (err: any) {
             console.error('Google sign-in error:', err);
-            if (err.code !== 'auth/popup-closed-by-user') {
-                toast.error('Sign-in failed. Please try again.');
-            }
-        } finally {
+            toast.error('Sign-in failed. Please try again.');
             setLoading(false);
         }
     };

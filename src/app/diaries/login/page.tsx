@@ -73,26 +73,10 @@ export default function DiaryLoginPage() {
         setLoading(true);
         try {
             const provider = new GoogleAuthProvider();
-            try {
-                const cred = await signInWithPopup(auth, provider);
-                toast.success('Welcome!');
-                await handlePostLogin(cred.user.uid);
-            } catch (popupErr: any) {
-                // Fallback to redirect for mobile / popup-blocked
-                if (
-                    popupErr.code === 'auth/popup-blocked' ||
-                    popupErr.code === 'auth/cancelled-popup-request'
-                ) {
-                    await signInWithRedirect(auth, provider);
-                    return; // Page will redirect
-                } else if (popupErr.code !== 'auth/popup-closed-by-user') {
-                    throw popupErr;
-                }
-            }
+            await signInWithRedirect(auth, provider);
         } catch (err: any) {
             console.error('Google sign-in error:', err);
             toast.error('Google sign-in failed. Please try again.');
-        } finally {
             setLoading(false);
         }
     };
