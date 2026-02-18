@@ -13,6 +13,7 @@ import { formatDate, formatCount } from '@/lib/diary/utils';
 import type { DiaryProfile, DiaryPost } from '@/types/diary';
 import DiaryPostCard from '@/components/diary/DiaryPostCard';
 import SubscribeBox from '@/components/diary/SubscribeBox';
+import AuthPromptModal from '@/components/diary/AuthPromptModal';
 import toast from 'react-hot-toast';
 
 export default function WriterProfilePage() {
@@ -24,6 +25,7 @@ export default function WriterProfilePage() {
     const [followLoading, setFollowLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'posts' | 'about'>('posts');
     const [loading, setLoading] = useState(true);
+    const [showAuthModal, setShowAuthModal] = useState(false);
 
     useEffect(() => {
         if (!userId) return;
@@ -51,7 +53,7 @@ export default function WriterProfilePage() {
     };
 
     const handleFollow = async () => {
-        if (!user) { toast.error('Please sign in to follow writers'); return; }
+        if (!user) { setShowAuthModal(true); return; }
         if (!writer) return;
         setFollowLoading(true);
         try {
@@ -113,8 +115,8 @@ export default function WriterProfilePage() {
                                 onClick={handleFollow}
                                 disabled={followLoading}
                                 className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-colors ${following
-                                        ? 'bg-[#f5f5f5] text-[#6b6b6b] hover:bg-[#e5e5e5] border border-[#e5e5e5]'
-                                        : 'bg-[#FF6719] text-white hover:bg-[#e55b14]'
+                                    ? 'bg-[#f5f5f5] text-[#6b6b6b] hover:bg-[#e5e5e5] border border-[#e5e5e5]'
+                                    : 'bg-[#FF6719] text-white hover:bg-[#e55b14]'
                                     }`}
                             >
                                 {following ? 'Following' : 'Follow'}
@@ -132,8 +134,8 @@ export default function WriterProfilePage() {
                             key={tab}
                             onClick={() => setActiveTab(tab)}
                             className={`py-3 text-sm font-medium border-b-2 transition-colors capitalize ${activeTab === tab
-                                    ? 'border-[#FF6719] text-[#1a1a1a]'
-                                    : 'border-transparent text-[#6b6b6b] hover:text-[#1a1a1a]'
+                                ? 'border-[#FF6719] text-[#1a1a1a]'
+                                : 'border-transparent text-[#6b6b6b] hover:text-[#1a1a1a]'
                                 }`}
                         >
                             {tab}
@@ -172,6 +174,13 @@ export default function WriterProfilePage() {
                     </div>
                 )}
             </div>
+
+            {/* Auth Prompt Modal */}
+            <AuthPromptModal
+                isOpen={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+                action="follow"
+            />
         </div>
     );
 }
