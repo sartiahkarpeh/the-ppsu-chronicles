@@ -14,10 +14,12 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/firebase/config';
 import { getProfile } from '@/lib/diary/firebase';
+import { useDiaryAuth } from '@/hooks/useDiaryAuth';
 import toast from 'react-hot-toast';
 
 export default function DiaryRegisterPage() {
     const router = useRouter();
+    const { user, loading: authLoading } = useDiaryAuth();
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -25,6 +27,12 @@ export default function DiaryRegisterPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
+    // Auto-redirect if already logged in
+    useEffect(() => {
+        if (!authLoading && user) {
+            router.push('/diaries');
+        }
+    }, [user, authLoading, router]);
     const handlePostAuth = async (uid: string) => {
         const profile = await getProfile(uid);
         if (profile) {
