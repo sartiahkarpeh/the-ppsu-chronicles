@@ -43,18 +43,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             siteName: 'The PPSU Chronicles',
             images: [
                 {
-                    url: optimizedImageUrl,
-                    secureUrl: optimizedImageUrl,
-                    width: 800,
-                    height: 420,
+                    url: imageUrl,
+                    width: 1200,
+                    height: 630,
                     alt: title,
-                    type: 'image/jpeg',
                 },
-                {
-                    url: `${siteUrl}/logo1.jpg`, // Fallback smaller image
-                    width: 300,
-                    height: 300,
-                }
             ],
             locale: 'en_US',
             type: 'article',
@@ -65,7 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             card: 'summary_large_image',
             title,
             description,
-            images: [optimizedImageUrl],
+            images: [imageUrl],
             creator: '@PPSUChronicles',
             site: '@PPSUChronicles',
         },
