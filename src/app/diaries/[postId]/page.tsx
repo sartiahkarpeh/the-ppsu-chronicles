@@ -22,23 +22,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const title = post.title;
     const description = post.subtitle || generateExcerpt(post.content || '', 160);
     const imageUrl = post.coverImage || 'https://www.theppsuchronicles.com/ppsu.png';
-    const siteUrl = 'https://www.theppsuchronicles.com';
-    const postUrl = `${siteUrl}/diaries/${postId}`;
-
-    // Using Next.js image optimization to ensure the thumbnail is under 300KB for WhatsApp
-    // 800px width is sufficient for a high-quality link preview
-    const optimizedImageUrl = `${siteUrl}/_next/image?url=${encodeURIComponent(imageUrl)}&w=800&q=70`;
+    const baseUrl = 'https://www.theppsuchronicles.com';
+    const postUrl = `${baseUrl}/diaries/${postId}`;
 
     return {
-        title: `${title} | Student Diaries`,
-        description,
-        metadataBase: new URL(siteUrl),
-        alternates: {
-            canonical: `/diaries/${postId}`,
-        },
+        title: title,
+        description: description,
         openGraph: {
-            title,
-            description,
+            title: title,
+            description: description,
             url: postUrl,
             siteName: 'The PPSU Chronicles',
             images: [
@@ -52,12 +44,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             locale: 'en_US',
             type: 'article',
             publishedTime: post.publishedAt instanceof Date ? post.publishedAt.toISOString() : undefined,
-            authors: [post.authorName],
+            authors: [post.authorName || 'Anonymous'],
         },
         twitter: {
             card: 'summary_large_image',
-            title,
-            description,
+            title: title,
+            description: description,
             images: [imageUrl],
             creator: '@PPSUChronicles',
             site: '@PPSUChronicles',

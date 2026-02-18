@@ -58,7 +58,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" prefix="og: http://ogp.me/ns#">
+    <html lang="en">
       <head>
         <link rel="icon" href="/logo1.jpg" />
       </head>
