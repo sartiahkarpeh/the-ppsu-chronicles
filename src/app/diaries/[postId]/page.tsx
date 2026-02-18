@@ -22,11 +22,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const title = post.title;
     const description = post.subtitle || generateExcerpt(post.content || '', 160);
     const imageUrl = post.coverImage || 'https://www.theppsuchronicles.com/ppsu.png';
-    const postUrl = `https://www.theppsuchronicles.com/diaries/${postId}`;
+    const siteUrl = 'https://www.theppsuchronicles.com';
+    const postUrl = `${siteUrl}/diaries/${postId}`;
+
+    // Using Next.js image optimization to ensure the thumbnail is under 300KB for WhatsApp
+    // 800px width is sufficient for a high-quality link preview
+    const optimizedImageUrl = `${siteUrl}/_next/image?url=${encodeURIComponent(imageUrl)}&w=800&q=70`;
 
     return {
         title: `${title} | Student Diaries`,
         description,
+        metadataBase: new URL(siteUrl),
+        alternates: {
+            canonical: `/diaries/${postId}`,
+        },
         openGraph: {
             title,
             description,
@@ -34,12 +43,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             siteName: 'The PPSU Chronicles',
             images: [
                 {
-                    url: imageUrl,
-                    secureUrl: imageUrl,
-                    width: 1200,
-                    height: 630,
+                    url: optimizedImageUrl,
+                    secureUrl: optimizedImageUrl,
+                    width: 800,
+                    height: 420,
                     alt: title,
+                    type: 'image/jpeg',
                 },
+                {
+                    url: `${siteUrl}/logo1.jpg`, // Fallback smaller image
+                    width: 300,
+                    height: 300,
+                }
             ],
             locale: 'en_US',
             type: 'article',
@@ -50,12 +65,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             card: 'summary_large_image',
             title,
             description,
-            images: [imageUrl],
+            images: [optimizedImageUrl],
             creator: '@PPSUChronicles',
             site: '@PPSUChronicles',
-        },
-        alternates: {
-            canonical: postUrl,
         },
     };
 }
