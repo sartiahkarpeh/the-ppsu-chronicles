@@ -20,7 +20,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const title = `Subscribe to ${writer.displayName} on PPSU Diaries`;
     const description = `${writer.displayName} is sharing their journey. Please subscribe to me on the PPSU Diaries.`;
-    const imageUrl = writer.avatar || 'https://www.theppsuchronicles.com/ppsu.png';
+
+    // Use the dynamic OG image generator
+    const ogImageParams = new URLSearchParams();
+    ogImageParams.set('title', title);
+    if (writer.avatar) ogImageParams.set('cover', writer.avatar);
+    const ogImageUrl = `/api/og/diary?${ogImageParams.toString()}`;
 
     return {
         title: title,
@@ -30,19 +35,19 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             description: description,
             images: [
                 {
-                    url: imageUrl,
-                    width: 400,
-                    height: 400,
+                    url: ogImageUrl,
+                    width: 1200,
+                    height: 630,
                     alt: writer.displayName,
                 },
             ],
             type: 'profile',
         },
         twitter: {
-            card: 'summary',
+            card: 'summary_large_image',
             title: title,
             description: description,
-            images: [imageUrl],
+            images: [ogImageUrl],
         },
     };
 }

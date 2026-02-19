@@ -22,8 +22,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const title = post.title;
     const description = post.subtitle || generateExcerpt(post.content || '', 160);
-    const imageUrl = post.coverImage || 'https://www.theppsuchronicles.com/ppsu.png';
     const baseUrl = 'https://www.theppsuchronicles.com';
+
+    // Use the dynamic OG image generator
+    const ogImageParams = new URLSearchParams();
+    ogImageParams.set('title', title);
+    if (post.coverImage) ogImageParams.set('cover', post.coverImage);
+    const ogImageUrl = `/api/og/diary?${ogImageParams.toString()}`;
+
     const postUrl = `${baseUrl}/diaries/${postId}`;
 
     return {
@@ -33,10 +39,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             title: title,
             description: description,
             url: postUrl,
-            siteName: 'The PPSU Chronicles',
+            siteName: 'PPSU Diaries',
             images: [
                 {
-                    url: imageUrl,
+                    url: ogImageUrl,
                     width: 1200,
                     height: 630,
                     alt: title,
@@ -51,10 +57,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             card: 'summary_large_image',
             title: title,
             description: description,
-            images: [imageUrl],
+            images: [ogImageUrl],
             creator: '@PPSUChronicles',
             site: '@PPSUChronicles',
         },
+        alternates: {
+            canonical: postUrl,
+        }
     };
 }
 
