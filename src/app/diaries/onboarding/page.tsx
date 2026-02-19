@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Upload, PenLine, BookOpen } from 'lucide-react';
@@ -9,7 +10,9 @@ import type { DiaryProfile } from '@/types/diary';
 import toast from 'react-hot-toast';
 import { Timestamp } from 'firebase/firestore';
 
-export default function OnboardingPage() {
+import { Suspense } from 'react';
+
+function OnboardingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, profile, loading } = useDiaryAuth();
@@ -237,5 +240,13 @@ export default function OnboardingPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function OnboardingPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-[#6b6b6b]">Loading...</div>}>
+            <OnboardingContent />
+        </Suspense>
     );
 }

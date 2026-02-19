@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+'use client';
+
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -16,7 +17,9 @@ import { getProfile } from '@/lib/diary/firebase';
 import { useDiaryAuth } from '@/hooks/useDiaryAuth';
 import toast from 'react-hot-toast';
 
-export default function DiaryRegisterPage() {
+import { Suspense } from 'react';
+
+function DiaryRegisterContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user, loading: authLoading } = useDiaryAuth();
@@ -269,5 +272,13 @@ export default function DiaryRegisterPage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function DiaryRegisterPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center text-[#6b6b6b]">Loading...</div>}>
+            <DiaryRegisterContent />
+        </Suspense>
     );
 }
