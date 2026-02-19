@@ -1,7 +1,6 @@
-'use client';
-
+import { NextRequest, NextResponse } from 'next/server';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { BookOpen, Mail, Eye, EyeOff, User } from 'lucide-react';
 import {
@@ -19,7 +18,12 @@ import toast from 'react-hot-toast';
 
 export default function DiaryRegisterPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, loading: authLoading } = useDiaryAuth();
+
+    // Detect role from query param
+    const role = (searchParams.get('role') as 'writer' | 'reader') || 'reader';
+
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -33,6 +37,7 @@ export default function DiaryRegisterPage() {
             router.push('/diaries');
         }
     }, [user, authLoading, router]);
+
     const handlePostAuth = async (uid: string) => {
         console.log('DiaryRegisterPage: handlePostAuth for', uid);
         try {
@@ -43,7 +48,7 @@ export default function DiaryRegisterPage() {
                 router.push('/diaries');
             } else {
                 console.log('DiaryRegisterPage: Redirecting to /diaries/onboarding');
-                router.push('/diaries/onboarding');
+                router.push(`/diaries/onboarding?role=${role}`);
             }
         } catch (err) {
             console.error('DiaryRegisterPage: handlePostAuth error:', err);
@@ -74,7 +79,7 @@ export default function DiaryRegisterPage() {
             const cred = await createUserWithEmailAndPassword(auth, email, password);
             await updateProfile(cred.user, { displayName: name.trim() });
             toast.success('Account created!');
-            router.push('/diaries/onboarding');
+            router.push(`/diaries/onboarding?role=${role}`);
         } catch (err: any) {
             if (err.code === 'auth/email-already-in-use') {
                 toast.error('Email already in use. Try signing in instead.');
@@ -154,7 +159,7 @@ export default function DiaryRegisterPage() {
                         <span className="text-2xl font-bold text-[#1a1a1a]">Student Diaries</span>
                     </div>
                     <h1 className="text-3xl font-bold text-[#1a1a1a] mb-2" style={{ fontFamily: 'Lora, serif' }}>
-                        Join the community
+                        Join as a <span className="text-[#FF6719] capitalize">{role}</span>
                     </h1>
                     <p className="text-[#6b6b6b]">Share your stories with fellow PPSU students</p>
                 </div>
@@ -254,7 +259,7 @@ export default function DiaryRegisterPage() {
                 {/* Footer */}
                 <p className="text-center text-sm text-[#6b6b6b] mt-6">
                     Already have an account?{' '}
-                    <Link href="/diaries/login" className="text-[#FF6719] font-medium hover:underline">
+                    <Link href={`/diaries/login?role=${role}`} className="text-[#FF6719] font-medium hover:underline">
                         Sign in
                     </Link>
                 </p>

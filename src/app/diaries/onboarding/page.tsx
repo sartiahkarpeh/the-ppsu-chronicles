@@ -1,7 +1,6 @@
-'use client';
-
+import { NextRequest, NextResponse } from 'next/server';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Upload, PenLine, BookOpen } from 'lucide-react';
 import { useDiaryAuth } from '@/hooks/useDiaryAuth';
 import { createProfile, uploadDiaryImage } from '@/lib/diary/firebase';
@@ -12,9 +11,14 @@ import { Timestamp } from 'firebase/firestore';
 
 export default function OnboardingPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, profile, loading } = useDiaryAuth();
-    const [step, setStep] = useState<'role' | 'details'>('role');
-    const [role, setRole] = useState<'writer' | 'reader'>('reader');
+
+    // Check for pre-selected role
+    const preSelectedRole = searchParams.get('role') as 'writer' | 'reader' | null;
+
+    const [step, setStep] = useState<'role' | 'details'>(preSelectedRole ? 'details' : 'role');
+    const [role, setRole] = useState<'writer' | 'reader'>(preSelectedRole || 'reader');
     const [displayName, setDisplayName] = useState('');
     const [bio, setBio] = useState('');
     const [program, setProgram] = useState('');
@@ -133,9 +137,11 @@ export default function OnboardingPage() {
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit}>
-                        <button type="button" onClick={() => setStep('role')} className="text-sm text-[#FF6719] hover:underline mb-4">
-                            ← Change role
-                        </button>
+                        {!preSelectedRole && (
+                            <button type="button" onClick={() => setStep('role')} className="text-sm text-[#FF6719] hover:underline mb-4">
+                                ← Change role
+                            </button>
+                        )}
                         <h1 className="text-2xl font-bold text-[#1a1a1a] mb-1" style={{ fontFamily: 'var(--font-lora), serif' }}>
                             Complete your profile
                         </h1>

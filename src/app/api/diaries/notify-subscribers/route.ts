@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { getAdminDb } from '@/lib/firebaseAdmin';
+import { sendDiaryEmail } from '@/lib/diary/email';
 
 export async function POST(req: NextRequest) {
     try {
@@ -10,19 +10,22 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // Get all active subscribers
-        const subsRef = collection(db, 'diary_subscriptions');
-        const subsQuery = query(
-            subsRef,
-            where('isActive', '==', true)
-        );
-        const subsSnap = await getDocs(subsQuery);
+        const adminDb = getAdminDb();
+        if (!adminDb) {
+            console.error('Firebase Admin not initialized');
+            return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        }
+
+        // Get all active subscribers using Admin SDK for full access
+        const subsSnap = await adminDb.collection('diary_subscriptions')
+            .where('isActive', '==', true)
+            .get();
 
         if (subsSnap.empty) {
             return NextResponse.json({ success: true, sent: 0 });
         }
 
-        // Deduplicate emails (in case someone subscribed to multiple writers)
+        // Deduplicate emails
         const uniqueSubscribers = new Map();
         subsSnap.docs.forEach(doc => {
             const data = doc.data();
@@ -34,38 +37,35 @@ export async function POST(req: NextRequest) {
             }
         });
 
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ppsuchronicles.com';
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.theppsuchronicles.com';
         const postUrl = `${siteUrl}/diaries/${postId}`;
 
-        // Send emails to each unique subscriber
+        // Send emails using the shared utility (no more internal HTTP fetch)
         const emailPromises = Array.from(uniqueSubscribers.values()).map(async (sub) => {
             const unsubscribeUrl = `${siteUrl}/diaries/unsubscribe?token=${sub.token}`;
 
             try {
-                await fetch(`${siteUrl}/api/diaries/send-email`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        type: 'new_post',
-                        to: sub.subscriberEmail,
-                        writerName: authorName,
-                        postTitle: title,
-                        postSubtitle: subtitle,
-                        readTime,
-                        postUrl,
-                        unsubscribeUrl,
-                    }),
+                await sendDiaryEmail({
+                    type: 'new_post',
+                    to: sub.email, // Corrected from sub.subscriberEmail
+                    writerName: authorName,
+                    postTitle: title,
+                    postSubtitle: subtitle,
+                    readTime,
+                    postUrl,
+                    unsubscribeUrl,
                 });
-                return { email: sub.subscriberEmail, status: 'sent' };
+                return { email: sub.email, status: 'sent' };
             } catch (err) {
-                return { email: sub.subscriberEmail, status: 'failed' };
+                console.error(`Failed to send email to ${sub.email}:`, err);
+                return { email: sub.email, status: 'failed' };
             }
         });
 
         const results = await Promise.allSettled(emailPromises);
         const sent = results.filter(r => r.status === 'fulfilled' && (r as any).value?.status === 'sent').length;
 
-        return NextResponse.json({ success: true, sent, total: subsSnap.size });
+        return NextResponse.json({ success: true, sent, total: uniqueSubscribers.size });
     } catch (error: any) {
         console.error('Notify subscribers error:', error);
         return NextResponse.json(

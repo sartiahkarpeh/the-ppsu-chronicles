@@ -1,9 +1,8 @@
-'use client';
-
+import { NextRequest, NextResponse } from 'next/server';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, Mail, Eye, EyeOff } from 'lucide-react';
+import { BookOpen, Mail, Eye, EyeOff, PenLine } from 'lucide-react';
 import {
     signInWithEmailAndPassword,
     signInWithPopup,
@@ -18,7 +17,14 @@ import toast from 'react-hot-toast';
 
 export default function DiaryLoginPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { user, loading: authLoading } = useDiaryAuth();
+
+    // Role selection state
+    const [selectedRole, setSelectedRole] = useState<'writer' | 'reader' | null>(
+        (searchParams.get('role') as 'writer' | 'reader') || null
+    );
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -30,6 +36,7 @@ export default function DiaryLoginPage() {
             router.push('/diaries');
         }
     }, [user, authLoading, router]);
+
     const handlePostLogin = async (uid: string) => {
         console.log('DiaryLoginPage: handlePostLogin for', uid);
         try {
@@ -40,7 +47,10 @@ export default function DiaryLoginPage() {
                 router.push('/diaries');
             } else {
                 console.log('DiaryLoginPage: Redirecting to /diaries/onboarding');
-                router.push('/diaries/onboarding');
+                const onboardUrl = selectedRole
+                    ? `/diaries/onboarding?role=${selectedRole}`
+                    : '/diaries/onboarding';
+                router.push(onboardUrl);
             }
         } catch (err) {
             console.error('DiaryLoginPage: handlePostLogin error:', err);
@@ -126,9 +136,68 @@ export default function DiaryLoginPage() {
         }
     };
 
+    if (!selectedRole) {
+        return (
+            <div className="min-h-[calc(100vh-56px)] flex items-center justify-center px-4 py-12 bg-gradient-to-b from-[#fff7f3] to-white">
+                <div className="w-full max-w-lg">
+                    <div className="text-center mb-10">
+                        <div className="flex items-center justify-center gap-2 mb-4">
+                            <BookOpen className="w-10 h-10 text-[#FF6719]" />
+                            <span className="text-3xl font-bold text-[#1a1a1a]">Student Diaries</span>
+                        </div>
+                        <h1 className="text-4xl font-bold text-[#1a1a1a] mb-4" style={{ fontFamily: 'var(--font-lora), serif' }}>
+                            Choose your journey
+                        </h1>
+                        <p className="text-lg text-[#6b6b6b]">How would you like to participate today?</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <button
+                            onClick={() => setSelectedRole('writer')}
+                            className="p-8 border-2 border-[#e5e5e5] rounded-2xl hover:border-[#FF6719] hover:bg-[#fff8f5] transition-all text-left group bg-white shadow-sm hover:shadow-md"
+                        >
+                            <div className="w-12 h-12 bg-[#fff1e9] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <PenLine className="w-6 h-6 text-[#FF6719]" />
+                            </div>
+                            <h3 className="text-xl font-bold text-[#1a1a1a] mb-2">I am a Writer</h3>
+                            <p className="text-[#6b6b6b] leading-relaxed">
+                                Share your voice, stories, and creativity with the PPSU community.
+                            </p>
+                        </button>
+
+                        <button
+                            onClick={() => setSelectedRole('reader')}
+                            className="p-8 border-2 border-[#e5e5e5] rounded-2xl hover:border-[#FF6719] hover:bg-[#fff8f5] transition-all text-left group bg-white shadow-sm hover:shadow-md"
+                        >
+                            <div className="w-12 h-12 bg-[#fff1e9] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                                <BookOpen className="w-6 h-6 text-[#FF6719]" />
+                            </div>
+                            <h3 className="text-xl font-bold text-[#1a1a1a] mb-2">I am a Reader</h3>
+                            <p className="text-[#6b6b6b] leading-relaxed">
+                                Explore authentic voices and follow your favorite student writers.
+                            </p>
+                        </button>
+                    </div>
+
+                    <p className="text-center text-sm text-[#999999] mt-10">
+                        Need help? <Link href="/support" className="text-[#FF6719] hover:underline">Contact the Chronicles team</Link>
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-[calc(100vh-56px)] flex items-center justify-center px-4 py-12 bg-gradient-to-b from-[#fff7f3] to-white">
             <div className="w-full max-w-md">
+                {/* Back button */}
+                <button
+                    onClick={() => setSelectedRole(null)}
+                    className="text-sm text-[#FF6719] font-medium hover:underline mb-6 flex items-center gap-1"
+                >
+                    ← Change role
+                </button>
+
                 {/* Header */}
                 <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-2 mb-4">
@@ -138,7 +207,7 @@ export default function DiaryLoginPage() {
                     <h1 className="text-3xl font-bold text-[#1a1a1a] mb-2" style={{ fontFamily: 'Lora, serif' }}>
                         Welcome back
                     </h1>
-                    <p className="text-[#6b6b6b]">Sign in to continue reading and writing</p>
+                    <p className="text-[#6b6b6b]">Sign in as a <span className="text-[#FF6719] font-semibold capitalize">{selectedRole}</span></p>
                 </div>
 
                 {/* Google Button */}
@@ -211,7 +280,7 @@ export default function DiaryLoginPage() {
                 {/* Footer */}
                 <p className="text-center text-sm text-[#6b6b6b] mt-6">
                     Don&apos;t have an account?{' '}
-                    <Link href="/diaries/register" className="text-[#FF6719] font-medium hover:underline">
+                    <Link href={`/diaries/register?role=${selectedRole}`} className="text-[#FF6719] font-medium hover:underline">
                         Create one
                     </Link>
                 </p>
