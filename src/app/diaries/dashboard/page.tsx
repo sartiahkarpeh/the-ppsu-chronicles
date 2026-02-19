@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Eye, Heart, Users, FileText, Edit, Trash2, Plus, CheckCircle2, User2, PenLine, Star } from 'lucide-react';
+import { Eye, Heart, Users, FileText, Edit, Trash2, Plus, CheckCircle2, User2, PenLine, Star, Share2, Copy } from 'lucide-react';
 import { useDiaryAuth } from '@/hooks/useDiaryAuth';
 import { getPostsByAuthor, deletePost, getWriterSubscribers } from '@/lib/diary/firebase';
 import { formatDate, formatCount, formatRelativeDate } from '@/lib/diary/utils';
@@ -58,6 +58,14 @@ export default function DashboardPage() {
             else setPublished(prev => prev.filter(p => p.postId !== postId));
             toast.success('Post deleted');
         } catch { toast.error('Failed to delete'); }
+    };
+
+    const handleCopyLink = () => {
+        if (!user) return;
+        const siteUrl = window.location.origin;
+        const subUrl = `${siteUrl}/diaries/subscribe/${user.uid}`;
+        navigator.clipboard.writeText(subUrl);
+        toast.success('Subscription link copied to clipboard!');
     };
 
     // Onboarding checklist for new writers
@@ -128,6 +136,26 @@ export default function DashboardPage() {
                             <p className="text-xs text-[#6b6b6b]">{stat.label}</p>
                         </div>
                     ))}
+                </div>
+
+                {/* Share Link Row */}
+                <div className="bg-[#1a1a1a] rounded-xl p-4 sm:p-5 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm border border-[#333]">
+                    <div className="flex items-center gap-3 text-center sm:text-left">
+                        <div className="w-10 h-10 bg-[#FF6719]/10 rounded-full flex items-center justify-center shrink-0">
+                            <Share2 className="w-5 h-5 text-[#FF6719]" />
+                        </div>
+                        <div>
+                            <h3 className="text-white font-bold text-sm sm:text-base">Grow your audience</h3>
+                            <p className="text-gray-400 text-[10px] sm:text-xs">Share your personal link for students to subscribe to you</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleCopyLink}
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#FF6719] hover:bg-[#e55b14] text-white px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all transform active:scale-95"
+                    >
+                        <Copy className="w-4 h-4" />
+                        Copy Subscription Link
+                    </button>
                 </div>
 
                 {/* Tabs */}
