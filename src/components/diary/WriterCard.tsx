@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function WriterCard({ writer, compact = false }: Props) {
-    const { user } = useDiaryAuth();
+    const { user, profile } = useDiaryAuth();
     const router = useRouter();
     const [following, setFollowing] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -30,7 +30,7 @@ export default function WriterCard({ writer, compact = false }: Props) {
     const handleFollow = async (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!user) {
+        if (!user || !profile) {
             toast('Sign in to follow writers', { icon: '🔒' });
             router.push('/diaries/login');
             return;
