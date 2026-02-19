@@ -21,8 +21,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const title = `Subscribe to ${writer.displayName} on PPSU Diaries`;
     const description = `${writer.displayName} is sharing their journey. Please subscribe to me on the PPSU Diaries.`;
 
-    // Use direct avatar URL — WhatsApp requires simple, direct image URLs
-    const imageUrl = writer.avatar || 'https://www.theppsuchronicles.com/ppsu.png';
+    // Use image proxy for a clean URL — avoids encoding issues in HTML meta tags
+    const imageUrl = `https://www.theppsuchronicles.com/api/og/diary/image?writerId=${writerId}`;
 
     return {
         metadataBase: new URL('https://www.theppsuchronicles.com'),

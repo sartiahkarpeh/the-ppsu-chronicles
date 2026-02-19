@@ -25,8 +25,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const baseUrl = 'https://www.theppsuchronicles.com';
     const postUrl = `${baseUrl}/diaries/${postId}`;
 
-    // Use direct cover image URL — WhatsApp requires simple, direct image URLs
-    const imageUrl = post.coverImage || `${baseUrl}/ppsu.png`;
+    // Use image proxy for a clean URL — avoids &amp; encoding issues in HTML meta tags
+    const imageUrl = `${baseUrl}/api/og/diary/image?postId=${postId}`;
 
     return {
         metadataBase: new URL(baseUrl),
