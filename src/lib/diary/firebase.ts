@@ -47,7 +47,6 @@ export async function getWriters(limitCount: number = 20): Promise<DiaryProfile[
     const q = query(
         collection(db, PROFILES),
         where('role', '==', 'writer'),
-        where('isApproved', '==', true),
         orderBy('followersCount', 'desc'),
         limit(limitCount)
     );
