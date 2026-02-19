@@ -84,6 +84,7 @@ export default function WritePage() {
             likesCount: 0,
             commentsCount: 0,
             readTime: calculateReadTime(content),
+            createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         };
 
@@ -132,15 +133,17 @@ export default function WritePage() {
             likesCount: 0,
             commentsCount: 0,
             readTime: calculateReadTime(content),
+            createdAt: Timestamp.now(),
             updatedAt: Timestamp.now(),
         };
 
         try {
+            let finalPostId = draftId;
             if (draftId) {
                 await updatePost(draftId, postData);
             } else {
-                const newId = await createPost(postData);
-                setDraftId(newId);
+                finalPostId = await createPost(postData);
+                setDraftId(finalPostId);
             }
 
             // Notify subscribers if published
@@ -150,7 +153,7 @@ export default function WritePage() {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            postId: draftId,
+                            postId: finalPostId,
                             authorId: user.uid,
                             authorName: profile.displayName,
                             title: title.trim(),

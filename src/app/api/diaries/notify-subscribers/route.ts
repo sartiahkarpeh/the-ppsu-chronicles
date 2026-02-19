@@ -10,11 +10,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        // Get active subscribers for this writer
+        // Get all active subscribers
         const subsRef = collection(db, 'diary_subscriptions');
         const subsQuery = query(
             subsRef,
-            where('writerId', '==', authorId),
             where('isActive', '==', true)
         );
         const subsSnap = await getDocs(subsQuery);
@@ -23,13 +22,24 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, sent: 0 });
         }
 
+        // Deduplicate emails (in case someone subscribed to multiple writers)
+        const uniqueSubscribers = new Map();
+        subsSnap.docs.forEach(doc => {
+            const data = doc.data();
+            if (!uniqueSubscribers.has(data.subscriberEmail)) {
+                uniqueSubscribers.set(data.subscriberEmail, {
+                    email: data.subscriberEmail,
+                    token: doc.id
+                });
+            }
+        });
+
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://ppsuchronicles.com';
         const postUrl = `${siteUrl}/diaries/${postId}`;
 
-        // Send emails to each subscriber
-        const emailPromises = subsSnap.docs.map(async (doc) => {
-            const sub = doc.data();
-            const unsubscribeUrl = `${siteUrl}/diaries/unsubscribe?token=${doc.id}`;
+        // Send emails to each unique subscriber
+        const emailPromises = Array.from(uniqueSubscribers.values()).map(async (sub) => {
+            const unsubscribeUrl = `${siteUrl}/diaries/unsubscribe?token=${sub.token}`;
 
             try {
                 await fetch(`${siteUrl}/api/diaries/send-email`, {
