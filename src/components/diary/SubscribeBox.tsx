@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Mail } from 'lucide-react';
-import { validatePPSUEmail } from '@/lib/diary/utils';
 import { useDiaryAuth } from '@/hooks/useDiaryAuth';
 import { subscribeToWriter } from '@/lib/diary/firebase';
 import toast from 'react-hot-toast';
@@ -21,8 +20,8 @@ export default function SubscribeBox({ writerId, writerName }: Props) {
         e.preventDefault();
         const subEmail = email.trim() || user?.email || '';
 
-        if (!validatePPSUEmail(subEmail)) {
-            toast.error('Please use your @ppsu.ac.in email address');
+        if (!subEmail || !subEmail.includes('@')) {
+            toast.error('Please enter a valid email address');
             return;
         }
 
@@ -80,9 +79,9 @@ export default function SubscribeBox({ writerId, writerName }: Props) {
                     type="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    placeholder="your.name@ppsu.ac.in"
+                    placeholder="your.email@example.com"
                     className="flex-1 min-w-0 px-4 py-2.5 border border-[#e5e5e5] rounded-full text-sm focus:outline-none focus:border-[#FF6719] focus:ring-1 focus:ring-[#FF6719] transition-colors box-border"
-                    required={!user?.email?.endsWith('@ppsu.ac.in')}
+                    required={!user?.email}
                 />
                 <button
                     type="submit"
@@ -93,7 +92,7 @@ export default function SubscribeBox({ writerId, writerName }: Props) {
                 </button>
             </form>
             <p className="text-xs text-[#6b6b6b] mt-2">
-                Only @ppsu.ac.in emails accepted. Unsubscribe anytime.
+                Unsubscribe anytime.
             </p>
         </div>
     );
