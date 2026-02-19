@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { sendDiaryEmail } from '@/lib/diary/email';
 
-// Rate limit: send emails in batches to avoid hitting Resend's API limits
-const BATCH_SIZE = 5;
-const BATCH_DELAY_MS = 1200; // ~4 emails/sec (Resend free tier = 10/sec, leaving headroom)
+// Resend rate limit: 2 emails/second on free tier
+// Send ONE email at a time with 600ms delay (≈1.6 emails/sec, safely under 2/sec)
+const DELAY_BETWEEN_EMAILS_MS = 600;
+const MAX_RETRIES = 2;
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
         }
 
-        // Get ONLY this writer's active subscribers (not all subscribers globally)
+        // Get ONLY this writer's active subscribers
         const subsSnap = await adminDb.collection('diary_subscriptions')
             .where('writerId', '==', authorId)
             .where('isActive', '==', true)
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, sent: 0, total: 0 });
         }
 
-        // Deduplicate by email (a subscriber might have multiple entries)
+        // Deduplicate by email
         const uniqueSubscribers = new Map<string, { email: string; token: string; name: string }>();
         subsSnap.docs.forEach(doc => {
             const data = doc.data();
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.theppsuchronicles.com';
         const postUrl = `${siteUrl}/diaries/${postId}`;
 
-        // Calculate content preview (50% of content, stripped of HTML)
+        // Calculate content preview
         const strippedContent = content ? content.replace(/<[^>]*>/g, '').trim() : '';
         const previewLength = Math.floor(strippedContent.length * 0.5);
         const contentPreview = strippedContent.length > 0
@@ -68,57 +69,65 @@ export async function POST(req: NextRequest) {
 
         console.log(`Sending notifications to ${subscribers.length} subscribers for post "${title}" by ${authorName}`);
 
-        // Send emails in batches with delays to respect rate limits
-        for (let i = 0; i < subscribers.length; i += BATCH_SIZE) {
-            const batch = subscribers.slice(i, i + BATCH_SIZE);
+        // Send emails ONE AT A TIME with delay to stay within 2 emails/sec rate limit
+        for (let i = 0; i < subscribers.length; i++) {
+            const sub = subscribers[i];
+            const unsubscribeUrl = `${siteUrl}/diaries/unsubscribe?token=${sub.token}`;
 
-            const batchResults = await Promise.allSettled(
-                batch.map(async (sub) => {
-                    const unsubscribeUrl = `${siteUrl}/diaries/unsubscribe?token=${sub.token}`;
+            let sent = false;
+            let lastError = '';
 
-                    try {
-                        await sendDiaryEmail({
-                            type: 'new_post',
-                            to: sub.email,
-                            writerName: authorName,
-                            authorAvatar,
-                            postTitle: title,
-                            postSubtitle: subtitle,
-                            readTime,
-                            postUrl,
-                            unsubscribeUrl,
-                            featuredImage: coverImage,
-                            contentPreview,
-                            publishedAt,
-                        });
-                        console.log(`✓ Email sent to ${sub.email}`);
-                        return { email: sub.email, status: 'sent' as const };
-                    } catch (err: any) {
-                        console.error(`✗ Failed to send email to ${sub.email}:`, err?.message || err);
-                        return { email: sub.email, status: 'failed' as const, error: err?.message };
+            // Retry logic for rate limit (429) errors
+            for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                    await sendDiaryEmail({
+                        type: 'new_post',
+                        to: sub.email,
+                        writerName: authorName,
+                        authorAvatar,
+                        postTitle: title,
+                        postSubtitle: subtitle,
+                        readTime,
+                        postUrl,
+                        unsubscribeUrl,
+                        featuredImage: coverImage,
+                        contentPreview,
+                        publishedAt,
+                    });
+                    console.log(`✓ [${i + 1}/${subscribers.length}] Email sent to ${sub.email}`);
+                    sent = true;
+                    break;
+                } catch (err: any) {
+                    lastError = err?.message || String(err);
+                    const isRateLimit = lastError.includes('429') || lastError.includes('rate') || lastError.includes('Too many');
+
+                    if (isRateLimit && attempt < MAX_RETRIES) {
+                        // Wait longer before retrying on rate limit
+                        const backoff = (attempt + 1) * 1500; // 1.5s, 3s
+                        console.log(`⏳ [${i + 1}/${subscribers.length}] Rate limited for ${sub.email}, retrying in ${backoff}ms (attempt ${attempt + 1}/${MAX_RETRIES})`);
+                        await delay(backoff);
+                    } else {
+                        console.error(`✗ [${i + 1}/${subscribers.length}] Failed to send to ${sub.email}: ${lastError}`);
                     }
-                })
-            );
-
-            // Collect results
-            batchResults.forEach((result) => {
-                if (result.status === 'fulfilled') {
-                    results.push(result.value);
-                } else {
-                    results.push({ email: 'unknown', status: 'failed', error: result.reason?.message });
                 }
+            }
+
+            results.push({
+                email: sub.email,
+                status: sent ? 'sent' : 'failed',
+                ...(sent ? {} : { error: lastError }),
             });
 
-            // Wait between batches (skip delay after last batch)
-            if (i + BATCH_SIZE < subscribers.length) {
-                await delay(BATCH_DELAY_MS);
+            // Wait between each email to respect the 2/sec rate limit
+            if (i < subscribers.length - 1) {
+                await delay(DELAY_BETWEEN_EMAILS_MS);
             }
         }
 
         const sent = results.filter(r => r.status === 'sent').length;
         const failed = results.filter(r => r.status === 'failed').length;
 
-        console.log(`Notification summary: ${sent} sent, ${failed} failed out of ${subscribers.length} total`);
+        console.log(`✅ Notification complete: ${sent} sent, ${failed} failed out of ${subscribers.length} total`);
 
         if (failed > 0) {
             const failedEmails = results.filter(r => r.status === 'failed').map(r => `${r.email}: ${r.error}`);
