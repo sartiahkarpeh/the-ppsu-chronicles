@@ -23,16 +23,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const title = post.title;
     const description = post.subtitle || generateExcerpt(post.content || '', 160);
     const baseUrl = 'https://www.theppsuchronicles.com';
-
-    // Use the dynamic OG image generator
-    const ogImageParams = new URLSearchParams();
-    ogImageParams.set('title', title);
-    if (post.coverImage) ogImageParams.set('cover', post.coverImage);
-    const ogImageUrl = `/api/og/diary?${ogImageParams.toString()}`;
-
     const postUrl = `${baseUrl}/diaries/${postId}`;
 
+    // Use direct cover image URL — WhatsApp requires simple, direct image URLs
+    const imageUrl = post.coverImage || `${baseUrl}/ppsu.png`;
+
     return {
+        metadataBase: new URL(baseUrl),
         title: title,
         description: description,
         openGraph: {
@@ -42,7 +39,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             siteName: 'PPSU Diaries',
             images: [
                 {
-                    url: ogImageUrl,
+                    url: imageUrl,
                     width: 1200,
                     height: 630,
                     alt: title,
@@ -57,7 +54,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             card: 'summary_large_image',
             title: title,
             description: description,
-            images: [ogImageUrl],
+            images: [imageUrl],
             creator: '@PPSUChronicles',
             site: '@PPSUChronicles',
         },

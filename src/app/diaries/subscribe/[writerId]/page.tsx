@@ -21,13 +21,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const title = `Subscribe to ${writer.displayName} on PPSU Diaries`;
     const description = `${writer.displayName} is sharing their journey. Please subscribe to me on the PPSU Diaries.`;
 
-    // Use the dynamic OG image generator
-    const ogImageParams = new URLSearchParams();
-    ogImageParams.set('title', title);
-    if (writer.avatar) ogImageParams.set('cover', writer.avatar);
-    const ogImageUrl = `/api/og/diary?${ogImageParams.toString()}`;
+    // Use direct avatar URL — WhatsApp requires simple, direct image URLs
+    const imageUrl = writer.avatar || 'https://www.theppsuchronicles.com/ppsu.png';
 
     return {
+        metadataBase: new URL('https://www.theppsuchronicles.com'),
         title: title,
         description: description,
         openGraph: {
@@ -35,7 +33,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             description: description,
             images: [
                 {
-                    url: ogImageUrl,
+                    url: imageUrl,
                     width: 1200,
                     height: 630,
                     alt: writer.displayName,
@@ -47,7 +45,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             card: 'summary_large_image',
             title: title,
             description: description,
-            images: [ogImageUrl],
+            images: [imageUrl],
         },
     };
 }
