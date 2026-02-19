@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { CheckCircle } from 'lucide-react';
 import { useDiaryAuth } from '@/hooks/useDiaryAuth';
 import { followWriter, unfollowWriter, isFollowing } from '@/lib/diary/firebase';
@@ -16,6 +17,7 @@ interface Props {
 
 export default function WriterCard({ writer, compact = false }: Props) {
     const { user } = useDiaryAuth();
+    const router = useRouter();
     const [following, setFollowing] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -29,7 +31,8 @@ export default function WriterCard({ writer, compact = false }: Props) {
         e.preventDefault();
         e.stopPropagation();
         if (!user) {
-            toast.error('Please sign in to follow writers');
+            toast('Sign in to follow writers', { icon: '🔒' });
+            router.push('/diaries/login');
             return;
         }
         setLoading(true);
@@ -70,13 +73,13 @@ export default function WriterCard({ writer, compact = false }: Props) {
                     </Link>
                     <p className="text-xs text-[#6b6b6b] truncate">{writer.bio}</p>
                 </div>
-                {user && user.uid !== writer.userId && (
+                {(!user || user.uid !== writer.userId) && (
                     <button
                         onClick={handleFollow}
                         disabled={loading}
                         className={`shrink-0 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${following
-                                ? 'bg-[#f5f5f5] text-[#6b6b6b] hover:bg-[#e5e5e5]'
-                                : 'bg-[#FF6719] text-white hover:bg-[#e55b14]'
+                            ? 'bg-[#f5f5f5] text-[#6b6b6b] hover:bg-[#e5e5e5]'
+                            : 'bg-[#FF6719] text-white hover:bg-[#e55b14]'
                             }`}
                     >
                         {following ? 'Following' : 'Follow'}
@@ -111,13 +114,13 @@ export default function WriterCard({ writer, compact = false }: Props) {
                     </div>
                 </div>
             </div>
-            {user && user.uid !== writer.userId && (
+            {(!user || user.uid !== writer.userId) && (
                 <button
                     onClick={handleFollow}
                     disabled={loading}
                     className={`w-full mt-4 py-2 rounded-full text-sm font-semibold transition-colors ${following
-                            ? 'bg-[#f5f5f5] text-[#6b6b6b] hover:bg-[#e5e5e5] border border-[#e5e5e5]'
-                            : 'bg-[#FF6719] text-white hover:bg-[#e55b14]'
+                        ? 'bg-[#f5f5f5] text-[#6b6b6b] hover:bg-[#e5e5e5] border border-[#e5e5e5]'
+                        : 'bg-[#FF6719] text-white hover:bg-[#e55b14]'
                         }`}
                 >
                     {following ? 'Following' : 'Follow'}
