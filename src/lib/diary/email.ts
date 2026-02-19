@@ -3,6 +3,15 @@ import { Resend } from 'resend';
 const FROM_EMAIL = 'Student Diaries <diaries@theppsuchronicles.com>';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.theppsuchronicles.com';
 
+// Lazy singleton — avoid creating a new Resend instance per email
+let _resend: Resend | null = null;
+function getResend(): Resend {
+  if (!_resend) {
+    _resend = new Resend(process.env.RESEND_API_KEY);
+  }
+  return _resend;
+}
+
 interface EmailParams {
   type: 'welcome' | 'new_post';
   to: string;
@@ -21,7 +30,7 @@ interface EmailParams {
 }
 
 export async function sendDiaryEmail(params: EmailParams) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const resend = getResend();
   const { type, to, subscriberName, writerName, writerId, postTitle, postUrl, postSubtitle, readTime, unsubscribeUrl } = params;
 
   let subject = '';
