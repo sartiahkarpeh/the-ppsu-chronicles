@@ -16,6 +16,8 @@ interface EmailParams {
   unsubscribeUrl?: string;
   featuredImage?: string;
   contentPreview?: string;
+  authorAvatar?: string;
+  publishedAt?: string;
 }
 
 export async function sendDiaryEmail(params: EmailParams) {
@@ -111,7 +113,7 @@ export async function sendDiaryEmail(params: EmailParams) {
 </body>
 </html>`;
   } else if (type === 'new_post') {
-    const { featuredImage, contentPreview } = params;
+    const { featuredImage, contentPreview, authorAvatar, publishedAt } = params;
     subject = `New from Student Diaries: ${postTitle}`;
     html = `
 <!DOCTYPE html>
@@ -124,68 +126,86 @@ export async function sendDiaryEmail(params: EmailParams) {
     body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:#fafafa;color:#1a1a1a;-webkit-font-smoothing:antialiased">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#fafafa;padding:40px 20px">
+<body style="margin:0;padding:0;background-color:#ffffff;color:#1a1a1a;-webkit-font-smoothing:antialiased">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#ffffff;padding:40px 20px">
     <tr>
       <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border:1px solid #f0f0f0;border-radius:12px;overflow:hidden">
+        <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border:none;overflow:hidden">
           
-          <!-- Featured Image -->
-          ${featuredImage ? `
+          <!-- Author Header -->
           <tr>
-            <td>
-              <img src="${featuredImage}" alt="${postTitle}" style="width:100%;height:300px;object-fit:cover;display:block" />
-            </td>
-          </tr>` : ''}
-
-          <!-- Post Header -->
-          <tr>
-            <td style="padding:40px 40px 24px">
-              <p style="margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:1.5px;color:#FF6719;text-transform:uppercase">Fresh from the community</p>
-              <h1 style="margin:0 0 16px;font-size:32px;font-weight:700;color:#111111;line-height:1.2;font-family:'Lora', serif">${postTitle}</h1>
-              <p style="margin:0;font-size:15px;color:#666666;line-height:1.5">By <strong>${writerName}</strong> • ${readTime || 5} min read</p>
+            <td style="padding:0 0 32px">
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td width="48" style="vertical-align:top">
+                    ${authorAvatar ? `
+                    <div style="width:40px;height:40px;border-radius:20px;overflow:hidden;background-color:#FF6719">
+                      <img src="${authorAvatar}" alt="${writerName}" width="40" height="40" style="display:block;object-fit:cover" />
+                    </div>` : `
+                    <div style="width:40px;height:40px;border-radius:20px;background-color:#FF6719;display:flex;align-items:center;justify-content:center;color:#ffffff;font-weight:700;font-size:16px;text-align:center;line-height:40px">
+                      ${writerName?.charAt(0).toUpperCase()}
+                    </div>`}
+                  </td>
+                  <td style="padding-left:12px;vertical-align:middle">
+                    <p style="margin:0;font-size:15px;font-weight:600;color:#1a1a1a">${writerName} <span style="font-weight:400;color:#6b6b6b">shared a new story</span></p>
+                    <p style="margin:2px 0 0;font-size:13px;color:#6b6b6b">
+                      ${publishedAt || ''} ${publishedAt ? '•' : ''} ${readTime || 5} min read
+                    </p>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
-          <!-- Summary/Subtitle -->
+          <!-- Title -->
+          <tr>
+            <td style="padding:0 0 24px">
+              <h1 style="margin:0;font-size:36px;font-weight:700;color:#111111;line-height:1.2;font-family:'Lora', serif;letter-spacing:-0.02em">${postTitle}</h1>
+            </td>
+          </tr>
+
+          <!-- Subtitle -->
           ${postSubtitle ? `
           <tr>
-            <td style="padding:0 40px 24px">
-              <p style="margin:0;font-size:18px;line-height:1.6;color:#444444;font-style:italic;font-weight:500">"${postSubtitle}"</p>
+            <td style="padding:0 0 32px">
+              <p style="margin:0;font-size:20px;line-height:1.5;color:#6b6b6b;font-weight:400">${postSubtitle}</p>
+            </td>
+          </tr>` : ''}
+
+          <!-- Featured Image (16:9 Landscape) -->
+          ${featuredImage ? `
+          <tr>
+            <td style="padding:0 0 40px">
+              <div style="width:100%;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background-color:#f5f5f5">
+                <img src="${featuredImage}" alt="${postTitle}" width="600" style="width:100%;height:auto;display:block;object-fit:cover" />
+              </div>
             </td>
           </tr>` : ''}
 
           <!-- Content Preview -->
           ${contentPreview ? `
           <tr>
-            <td style="padding:0 40px 32px">
-              <div style="font-size:16px;line-height:1.7;color:#333333;margin-bottom:24px">
+            <td style="padding:0 0 48px">
+              <div style="font-size:18px;line-height:1.8;color:#1a1a1a;white-space:pre-wrap">
                 ${contentPreview}
-                <div style="margin-top:16px;font-weight:600;color:#FF6719">...</div>
+              </div>
+              <div style="margin-top:24px">
+                <a href="${postUrl || `${SITE_URL}/diaries`}" style="display:inline-block;color:#FF6719;text-decoration:none;font-weight:700;font-size:18px">
+                  Read Full Post →
+                </a>
               </div>
             </td>
           </tr>` : ''}
 
-          <!-- Action -->
-          <tr>
-            <td style="padding:0 40px 48px">
-              <a href="${postUrl || `${SITE_URL}/diaries`}" style="display:inline-block;background-color:#FF6719;color:#ffffff;padding:18px 40px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;box-shadow:0 4px 12px rgba(255,103,25,0.2)">
-                Read Full Post
-              </a>
-            </td>
-          </tr>
-
           <!-- Footer/Brand -->
           <tr>
-            <td style="padding:40px;background-color:#fafafa;border-top:1px solid #f0f0f0;text-align:center">
-              <p style="margin:0;font-size:14px;color:#111111;font-weight:600">Student Diaries</p>
-              <p style="margin:4px 0 24px;font-size:13px;color:#6b6b6b">The PPSU Chronicles</p>
+            <td style="padding:48px 0 40px;border-top:1px solid #f0f0f0;text-align:center">
+              <p style="margin:0;font-size:14px;color:#111111;font-weight:700;letter-spacing:1px;text-transform:uppercase">Student Diaries</p>
+              <p style="margin:4px 0 32px;font-size:13px;color:#6b6b6b">The PPSU Chronicles</p>
               
-              <div style="height:1px;background-color:#e5e5e5;width:60px;margin:0 auto 24px"></div>
-
               <p style="margin:0;font-size:12px;color:#999999;line-height:1.6">
-                You're receiving this because you're subscribed to our student circle.<br>
-                ${unsubscribeUrl ? `<a href="${unsubscribeUrl}" style="color:#666666;text-decoration:underline">Unsubscribe from these updates</a>` : ''}
+                You're receiving this because you're subscribed to ${writerName}'s diary.<br>
+                ${unsubscribeUrl ? `<a href="${unsubscribeUrl}" style="color:#666666;text-decoration:underline;margin-top:8px;display:inline-block">Unsubscribe</a>` : ''}
               </p>
             </td>
           </tr>

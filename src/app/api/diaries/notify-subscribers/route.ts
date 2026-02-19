@@ -4,7 +4,7 @@ import { sendDiaryEmail } from '@/lib/diary/email';
 
 export async function POST(req: NextRequest) {
     try {
-        const { postId, authorId, authorName, title, subtitle, tags, readTime, content, coverImage } = await req.json();
+        const { postId, authorId, authorName, authorAvatar, title, subtitle, tags, readTime, content, coverImage, publishedAt } = await req.json();
 
         if (!authorId || !title) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -47,6 +47,7 @@ export async function POST(req: NextRequest) {
             // Calculate content preview (50% of context)
             const strippedContent = content ? content.replace(/<[^>]*>/g, '').trim() : '';
             const previewLength = Math.floor(strippedContent.length * 0.5);
+            // Refined content preview: preserve structure and improve spacing
             const contentPreview = strippedContent.length > 0
                 ? strippedContent.substring(0, previewLength).replace(/\s+\S*$/, '') + '...'
                 : '';
@@ -56,13 +57,15 @@ export async function POST(req: NextRequest) {
                     type: 'new_post',
                     to: sub.email,
                     writerName: authorName,
+                    authorAvatar,
                     postTitle: title,
                     postSubtitle: subtitle,
                     readTime,
                     postUrl,
                     unsubscribeUrl,
                     featuredImage: coverImage,
-                    contentPreview
+                    contentPreview,
+                    publishedAt
                 });
                 return { email: sub.email, status: 'sent' };
             } catch (err) {

@@ -156,12 +156,14 @@ export default function WritePage() {
                             postId: finalPostId,
                             authorId: user.uid,
                             authorName: profile.displayName,
+                            authorAvatar: profile.avatar || '',
                             title: title.trim(),
                             subtitle: subtitle.trim(),
                             tags,
                             readTime: calculateReadTime(content),
                             content,
                             coverImage,
+                            publishedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
                         }),
                     });
                 } catch {
