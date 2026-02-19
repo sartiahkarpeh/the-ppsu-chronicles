@@ -4,29 +4,31 @@ const FROM_EMAIL = 'Student Diaries <diaries@theppsuchronicles.com>';
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.theppsuchronicles.com';
 
 interface EmailParams {
-    type: 'welcome' | 'new_post';
-    to: string;
-    subscriberName?: string;
-    writerName?: string;
-    writerId?: string;
-    postTitle?: string;
-    postUrl?: string;
-    postSubtitle?: string;
-    readTime?: number;
-    unsubscribeUrl?: string;
+  type: 'welcome' | 'new_post';
+  to: string;
+  subscriberName?: string;
+  writerName?: string;
+  writerId?: string;
+  postTitle?: string;
+  postUrl?: string;
+  postSubtitle?: string;
+  readTime?: number;
+  unsubscribeUrl?: string;
+  featuredImage?: string;
+  contentPreview?: string;
 }
 
 export async function sendDiaryEmail(params: EmailParams) {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const { type, to, subscriberName, writerName, writerId, postTitle, postUrl, postSubtitle, readTime, unsubscribeUrl } = params;
+  const resend = new Resend(process.env.RESEND_API_KEY);
+  const { type, to, subscriberName, writerName, writerId, postTitle, postUrl, postSubtitle, readTime, unsubscribeUrl } = params;
 
-    let subject = '';
-    let html = '';
+  let subject = '';
+  let html = '';
 
-    if (type === 'welcome') {
-        subject = `Welcome to the Student Diaries Circle ✨`;
-        const firstName = (subscriberName || 'there').split(' ')[0];
-        html = `
+  if (type === 'welcome') {
+    subject = `Welcome to the Student Diaries Circle ✨`;
+    const firstName = (subscriberName || 'there').split(' ')[0];
+    html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -108,16 +110,17 @@ export async function sendDiaryEmail(params: EmailParams) {
   </table>
 </body>
 </html>`;
-    } else if (type === 'new_post') {
-        subject = `New from Student Diaries: ${postTitle}`;
-        html = `
+  } else if (type === 'new_post') {
+    const { featuredImage, contentPreview } = params;
+    subject = `New from Student Diaries: ${postTitle}`;
+    html = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lora:wght@700&display=swap');
     body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
   </style>
 </head>
@@ -127,11 +130,19 @@ export async function sendDiaryEmail(params: EmailParams) {
       <td align="center">
         <table width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border:1px solid #f0f0f0;border-radius:12px;overflow:hidden">
           
+          <!-- Featured Image -->
+          ${featuredImage ? `
+          <tr>
+            <td>
+              <img src="${featuredImage}" alt="${postTitle}" style="width:100%;height:300px;object-fit:cover;display:block" />
+            </td>
+          </tr>` : ''}
+
           <!-- Post Header -->
           <tr>
-            <td style="padding:40px 40px 32px">
+            <td style="padding:40px 40px 24px">
               <p style="margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:1.5px;color:#FF6719;text-transform:uppercase">Fresh from the community</p>
-              <h1 style="margin:0 0 16px;font-size:28px;font-weight:700;color:#111111;line-height:1.3">${postTitle}</h1>
+              <h1 style="margin:0 0 16px;font-size:32px;font-weight:700;color:#111111;line-height:1.2;font-family:'Lora', serif">${postTitle}</h1>
               <p style="margin:0;font-size:15px;color:#666666;line-height:1.5">By <strong>${writerName}</strong> • ${readTime || 5} min read</p>
             </td>
           </tr>
@@ -139,16 +150,27 @@ export async function sendDiaryEmail(params: EmailParams) {
           <!-- Summary/Subtitle -->
           ${postSubtitle ? `
           <tr>
+            <td style="padding:0 40px 24px">
+              <p style="margin:0;font-size:18px;line-height:1.6;color:#444444;font-style:italic;font-weight:500">"${postSubtitle}"</p>
+            </td>
+          </tr>` : ''}
+
+          <!-- Content Preview -->
+          ${contentPreview ? `
+          <tr>
             <td style="padding:0 40px 32px">
-              <p style="margin:0;font-size:18px;line-height:1.6;color:#444444;font-style:italic">"${postSubtitle}"</p>
+              <div style="font-size:16px;line-height:1.7;color:#333333;margin-bottom:24px">
+                ${contentPreview}
+                <div style="margin-top:16px;font-weight:600;color:#FF6719">...</div>
+              </div>
             </td>
           </tr>` : ''}
 
           <!-- Action -->
           <tr>
             <td style="padding:0 40px 48px">
-              <a href="${postUrl || `${SITE_URL}/diaries`}" style="display:inline-block;background-color:#FF6719;color:#ffffff;padding:16px 36px;border-radius:6px;text-decoration:none;font-weight:600;font-size:15px">
-                Read the Full Post
+              <a href="${postUrl || `${SITE_URL}/diaries`}" style="display:inline-block;background-color:#FF6719;color:#ffffff;padding:18px 40px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;box-shadow:0 4px 12px rgba(255,103,25,0.2)">
+                Read Full Post
               </a>
             </td>
           </tr>
@@ -174,12 +196,12 @@ export async function sendDiaryEmail(params: EmailParams) {
   </table>
 </body>
 </html>`;
-    }
+  }
 
-    return await resend.emails.send({
-        from: FROM_EMAIL,
-        to,
-        subject,
-        html,
-    });
+  return await resend.emails.send({
+    from: FROM_EMAIL,
+    to,
+    subject,
+    html,
+  });
 }

@@ -160,6 +160,8 @@ export default function WritePage() {
                             subtitle: subtitle.trim(),
                             tags,
                             readTime: calculateReadTime(content),
+                            content,
+                            coverImage,
                         }),
                     });
                 } catch {

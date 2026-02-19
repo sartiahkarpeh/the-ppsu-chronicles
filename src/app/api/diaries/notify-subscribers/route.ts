@@ -4,7 +4,7 @@ import { sendDiaryEmail } from '@/lib/diary/email';
 
 export async function POST(req: NextRequest) {
     try {
-        const { postId, authorId, authorName, title, subtitle, tags, readTime } = await req.json();
+        const { postId, authorId, authorName, title, subtitle, tags, readTime, content, coverImage } = await req.json();
 
         if (!authorId || !title) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -44,16 +44,25 @@ export async function POST(req: NextRequest) {
         const emailPromises = Array.from(uniqueSubscribers.values()).map(async (sub) => {
             const unsubscribeUrl = `${siteUrl}/diaries/unsubscribe?token=${sub.token}`;
 
+            // Calculate content preview (50% of context)
+            const strippedContent = content ? content.replace(/<[^>]*>/g, '').trim() : '';
+            const previewLength = Math.floor(strippedContent.length * 0.5);
+            const contentPreview = strippedContent.length > 0
+                ? strippedContent.substring(0, previewLength).replace(/\s+\S*$/, '') + '...'
+                : '';
+
             try {
                 await sendDiaryEmail({
                     type: 'new_post',
-                    to: sub.email, // Corrected from sub.subscriberEmail
+                    to: sub.email,
                     writerName: authorName,
                     postTitle: title,
                     postSubtitle: subtitle,
                     readTime,
                     postUrl,
                     unsubscribeUrl,
+                    featuredImage: coverImage,
+                    contentPreview
                 });
                 return { email: sub.email, status: 'sent' };
             } catch (err) {
