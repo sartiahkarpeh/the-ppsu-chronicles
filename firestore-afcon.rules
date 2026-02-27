@@ -110,6 +110,32 @@ service cloud.firestore {
       allow write: if false; // Only Cloud Functions can write
     }
 
+    // ============= BASKETBALL COLLECTIONS =============
+
+    // Basketball Teams - Public read, admin write
+    match /basketball_teams/{teamId} {
+      allow read: if true;
+      allow write: if true; // For development
+    }
+
+    // Basketball Players - Public read, admin write
+    match /basketball_players/{playerId} {
+      allow read: if true;
+      allow write: if true; // For development
+    }
+
+    // Basketball Games - Public read, admin write
+    match /basketball_games/{gameId} {
+      allow read: if true;
+      allow write: if true; // For development
+    }
+
+    // Basketball Configs (Ticker, Page Settings) - Public read, admin write
+    match /basketball_configs/{configId} {
+      allow read: if true;
+      allow write: if true; // For development
+    }
+
     // Default deny all other collections
     match /{document=**} {
       allow read, write: if false;

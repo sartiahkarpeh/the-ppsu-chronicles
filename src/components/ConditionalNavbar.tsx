@@ -7,7 +7,12 @@ export default function ConditionalNavbar() {
     const pathname = usePathname();
 
     // Hide the global navbar on pages with their own navigation
-    if (pathname?.startsWith('/admin/afcon25') || pathname?.startsWith('/diaries')) {
+    if (
+        pathname?.startsWith('/admin/afcon25') ||
+        pathname?.startsWith('/admin/basketball') ||
+        pathname?.startsWith('/diaries') ||
+        pathname?.startsWith('/basketball')
+    ) {
         return null;
     }
 
