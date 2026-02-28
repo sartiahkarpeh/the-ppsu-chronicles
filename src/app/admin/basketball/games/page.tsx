@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Search, X, Radio } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, Radio, Video } from 'lucide-react';
 import Link from 'next/link';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '@/firebase/config';
@@ -369,13 +369,22 @@ export default function GamesManagement() {
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
                                                     {(game.status === 'scheduled' || game.status === 'live' || game.status === 'ht') && (
-                                                        <Link
-                                                            href={`/admin/basketball/games/${game.id}/live`}
-                                                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors active:scale-95"
-                                                        >
-                                                            <Radio className="w-3.5 h-3.5" />
-                                                            Go Live
-                                                        </Link>
+                                                        <>
+                                                            <Link
+                                                                href={`/admin/basketball/games/${game.id}/live`}
+                                                                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors active:scale-95"
+                                                            >
+                                                                <Radio className="w-3.5 h-3.5" />
+                                                                Go Live
+                                                            </Link>
+                                                            <Link
+                                                                href={`/admin/basketball/games/${game.id}/stream`}
+                                                                className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors active:scale-95"
+                                                            >
+                                                                <Video className="w-3.5 h-3.5" />
+                                                                Stream
+                                                            </Link>
+                                                        </>
                                                     )}
                                                     <button
                                                         onClick={() => handleOpenModal(game)}

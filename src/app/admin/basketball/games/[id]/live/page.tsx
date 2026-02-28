@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/config';
 import { doc, onSnapshot, updateDoc, serverTimestamp } from 'firebase/firestore';
 import type { BasketballGame, BasketballTeam } from '@/types/basketball';
-import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Video } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 // ─── HELPERS ────────────────────────────────────────────────────────────
@@ -218,7 +218,7 @@ export default function LiveGameController() {
         const defaultClock = defaultClockForPeriod(newPeriod);
         setClockSeconds(defaultClock);
         setClockRunning(false);
-        writeToDb({ period: newPeriod, clock: formatSecondsToMMSS(defaultClock), status: 'live' });
+        writeToDb({ period: newPeriod, clock: formatSecondsToMMSS(defaultClock), status: 'live', clockRunning: false });
         setStatus('live');
         addLog(`Period changed to ${periodLabel(newPeriod)} — Clock reset to ${formatSecondsToMMSS(defaultClock)}`);
     };
@@ -232,7 +232,7 @@ export default function LiveGameController() {
         setClockSeconds(defaultClock);
         setStatus('live');
         setClockRunning(true);
-        writeToDb({ status: 'live', period: newPeriod, clock: formatSecondsToMMSS(defaultClock) });
+        writeToDb({ status: 'live', period: newPeriod, clock: formatSecondsToMMSS(defaultClock), clockRunning: true });
         addLog('🏀 Game Started — Q1');
     };
 
@@ -240,7 +240,7 @@ export default function LiveGameController() {
         vibrate();
         setClockRunning(false);
         setStatus('ht');
-        writeToDb({ status: 'ht', clock: formatSecondsToMMSS(clockSeconds) });
+        writeToDb({ status: 'ht', clock: formatSecondsToMMSS(clockSeconds), clockRunning: false });
         addLog('⏸ Halftime');
     };
 
@@ -248,7 +248,7 @@ export default function LiveGameController() {
         vibrate();
         setClockRunning(false);
         setStatus('ft');
-        writeToDb({ status: 'ft', clock: '00:00' });
+        writeToDb({ status: 'ft', clock: '00:00', clockRunning: false });
         addLog('🏁 Game Over — Final');
         setShowEndGameModal(false);
         setTimeout(() => router.push('/admin/basketball/games'), 1500);
@@ -259,10 +259,11 @@ export default function LiveGameController() {
         vibrate();
         if (clockRunning) {
             setClockRunning(false);
-            syncClockToDB(); // sync immediately on pause
+            writeToDb({ clock: formatSecondsToMMSS(clockSeconds), clockRunning: false });
             addLog(`⏸ Clock paused at ${formatSecondsToMMSS(clockSeconds)}`);
         } else {
             setClockRunning(true);
+            writeToDb({ clockRunning: true });
             addLog(`▶ Clock started at ${formatSecondsToMMSS(clockSeconds)}`);
         }
     };
@@ -272,7 +273,7 @@ export default function LiveGameController() {
         const def = defaultClockForPeriod(period);
         setClockSeconds(def);
         setClockRunning(false);
-        writeToDb({ clock: formatSecondsToMMSS(def) });
+        writeToDb({ clock: formatSecondsToMMSS(def), clockRunning: false });
         addLog(`🔄 Clock reset to ${formatSecondsToMMSS(def)}`);
     };
 
@@ -320,6 +321,13 @@ export default function LiveGameController() {
                         <span style={{ color: homeTeam?.primaryColor || '#fff' }}>{homeTeam?.abbreviation || 'HOME'}</span>
                     </div>
                 </div>
+                <button
+                    onClick={() => router.push(`/admin/basketball/games/${id}/stream`)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-purple-600 hover:bg-purple-700 text-white transition-colors active:scale-95"
+                >
+                    <Video className="w-3 h-3" />
+                    📹 Stream
+                </button>
                 {/* Sync Indicator */}
                 <button
                     onClick={() => { if (syncStatus === 'error') writeToDb({ homeScore, awayScore, period, clock: formatSecondsToMMSS(clockSeconds), status }); }}

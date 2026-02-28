@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Settings, LayoutDashboard, ArrowLeft, Users, User, CalendarDays } from 'lucide-react';
+import { Settings, LayoutDashboard, ArrowLeft, Users, User, CalendarDays, Video } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
 
 export default function BasketballAdminLayout({ children }: { children: React.ReactNode }) {
@@ -16,6 +16,7 @@ export default function BasketballAdminLayout({ children }: { children: React.Re
         { name: 'Games', href: '/admin/basketball/games', icon: CalendarDays },
         { name: 'Teams', href: '/admin/basketball/teams', icon: Users },
         { name: 'Players', href: '/admin/basketball/players', icon: User },
+        { name: 'Streams', href: '/admin/basketball/streams', icon: Video },
         { name: 'Settings', href: '/admin/basketball/settings', icon: Settings },
     ];
 

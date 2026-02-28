@@ -127,8 +127,10 @@ export const gameSchema = z.object({
     awayScore: z.number().int().min(0).default(0),
     period: z.number().int().min(0).default(0), // 1-4 for quarters, 5+ for OT, 0 for not started
     clock: z.string().default('12:00'), // e.g. "12:00"
+    clockRunning: z.boolean().default(false),
     broadcastInfo: z.string().optional(),
     isFeatured: z.boolean().default(false),
+    isStreaming: z.boolean().default(false),
     createdAt: z.any().optional(),
     updatedAt: z.any().optional(),
 });
@@ -241,8 +243,10 @@ export interface BasketballGame {
     awayScore: number;
     period: number;
     clock: string;
+    clockRunning?: boolean;
     broadcastInfo?: string;
     isFeatured: boolean;
+    isStreaming?: boolean;
     createdAt: Timestamp;
     updatedAt: Timestamp;
 }

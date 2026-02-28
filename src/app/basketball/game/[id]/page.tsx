@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/firebase/config';
 import { doc, getDoc, collection, query, where, getDocs, onSnapshot, Timestamp } from 'firebase/firestore';
@@ -9,6 +9,17 @@ import { format } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import LazyImage from '@/components/basketball/LazyImage';
+
+function parseClockToSeconds(clock: string): number {
+    const [m, s] = clock.split(':').map(Number);
+    return (m || 0) * 60 + (s || 0);
+}
+
+function formatSecondsToMMSS(totalSeconds: number): string {
+    const m = Math.floor(Math.max(0, totalSeconds) / 60);
+    const s = Math.max(0, totalSeconds) % 60;
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
 
 export default function GameDetailPage() {
     const { id } = useParams() as { id: string };
@@ -19,6 +30,10 @@ export default function GameDetailPage() {
     const [awayTeam, setAwayTeam] = useState<BasketballTeam | null>(null);
     const [players, setPlayers] = useState<BasketballPlayer[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // Live clock state
+    const [liveClockSeconds, setLiveClockSeconds] = useState<number | null>(null);
+    const clockIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         if (!id) return;
@@ -54,6 +69,44 @@ export default function GameDetailPage() {
 
         return () => unsubscribeGame();
     }, [id, homeTeam, awayTeam]);
+
+    // Auto-decrementing clock for live games
+    // Only ticks when game.clockRunning is true (set by admin)
+    const lastSyncedClock = useRef<string | null>(null);
+
+    useEffect(() => {
+        // Clear any existing interval first
+        if (clockIntervalRef.current) {
+            clearInterval(clockIntervalRef.current);
+            clockIntervalRef.current = null;
+        }
+
+        const gameClock = game?.clock || '12:00';
+        const isClockRunning = game?.clockRunning === true;
+
+        // Sync the clock from Firestore when it changes
+        if (gameClock !== lastSyncedClock.current) {
+            lastSyncedClock.current = gameClock;
+            setLiveClockSeconds(parseClockToSeconds(gameClock));
+        }
+
+        // Only start ticking if admin has the clock running
+        if (isClockRunning) {
+            clockIntervalRef.current = setInterval(() => {
+                setLiveClockSeconds(prev => {
+                    if (prev === null || prev <= 0) return 0;
+                    return prev - 1;
+                });
+            }, 1000);
+        }
+
+        return () => {
+            if (clockIntervalRef.current) {
+                clearInterval(clockIntervalRef.current);
+                clockIntervalRef.current = null;
+            }
+        };
+    }, [game?.status, game?.clock, game?.clockRunning]);
 
     if (loading) {
         return (
@@ -103,7 +156,7 @@ export default function GameDetailPage() {
                             {isLive ? (
                                 <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-red-500/10 border border-red-500/30 rounded-full">
                                     <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                                    <span className="text-red-500 font-bold uppercase tracking-widest text-sm">LIVE {game.period ? `• Q${game.period}` : ''} {game.clock ? `• ${game.clock}` : ''}</span>
+                                    <span className="text-red-500 font-bold uppercase tracking-widest text-sm">LIVE {game.period ? `• Q${game.period}` : ''} {liveClockSeconds !== null ? `• ${formatSecondsToMMSS(liveClockSeconds)}` : game.clock ? `• ${game.clock}` : ''}</span>
                                 </div>
                             ) : isFinal ? (
                                 <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-neutral-800 border border-neutral-700 rounded-full">
@@ -115,6 +168,17 @@ export default function GameDetailPage() {
                                 </div>
                             )}
                         </div>
+
+                        {/* WATCH LIVE Banner */}
+                        {game.isStreaming && (
+                            <Link
+                                href={`/basketball/game/${game.id}/watch`}
+                                className="flex items-center gap-3 px-6 py-3 bg-red-600 hover:bg-red-700 rounded-2xl transition-all active:scale-95 shadow-lg shadow-red-600/30 animate-pulse"
+                            >
+                                <span className="w-3 h-3 bg-white rounded-full animate-ping"></span>
+                                <span className="text-white font-black uppercase tracking-wider text-sm">🔴 Watch Live Stream</span>
+                            </Link>
+                        )}
 
                         {/* Scores */}
                         <div className="flex w-full items-center justify-between md:justify-center gap-4 md:gap-16">
