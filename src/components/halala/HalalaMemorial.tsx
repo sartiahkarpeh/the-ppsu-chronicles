@@ -1,9 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { storage } from '@/firebase/config';
+import {
+  ref as storageRef,
+  uploadBytesResumable,
+  getDownloadURL,
+} from 'firebase/storage';
 import {
   ArrowLeft,
   X,
@@ -11,10 +17,12 @@ import {
   Feather,
   MapPin,
   Send,
+  ImagePlus,
+  Pencil,
 } from 'lucide-react';
 
 /* ----------------------------------------------------------------------------
- * Types & data
+ * Types, constants & data
  * ------------------------------------------------------------------------- */
 
 type Tribute = {
@@ -22,7 +30,9 @@ type Tribute = {
   name: string;
   country: string;
   message: string;
+  images: string[];
   createdAt: string;
+  updatedAt?: string;
 };
 
 type CuratedMessage = {
@@ -31,6 +41,11 @@ type CuratedMessage = {
   paragraphs: string[];
   verse?: string;
 };
+
+const MAX_IMAGES = 5;
+const MAX_TOTAL_BYTES = 50 * 1024 * 1024; // 50 MB
+const MAX_MESSAGE = 1500;
+const OWNED_KEY = 'halala_owned_tributes';
 
 const GALLERY = [
   { src: '/halala/pic1.jpeg', alt: 'Halala Khumalo' },
@@ -117,6 +132,60 @@ const MESSAGES: CuratedMessage[] = [
 ];
 
 /* ----------------------------------------------------------------------------
+ * Helpers
+ * ------------------------------------------------------------------------- */
+
+function loadOwned(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  try {
+    return JSON.parse(localStorage.getItem(OWNED_KEY) || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function saveOwned(map: Record<string, string>) {
+  try {
+    localStorage.setItem(OWNED_KEY, JSON.stringify(map));
+  } catch {
+    /* ignore quota / private mode errors */
+  }
+}
+
+// Upload files to Firebase Storage (client-side, same pattern the site already
+// uses on the student-voice page) and return their public download URLs.
+async function uploadImages(
+  files: File[],
+  onProgress?: (pct: number) => void
+): Promise<string[]> {
+  const urls: string[] = [];
+  let done = 0;
+  for (const file of files) {
+    const safe = file.name.replace(/[^\w.\-]/g, '_');
+    const path = `halala-tributes/${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2, 8)}_${safe}`;
+    const task = uploadBytesResumable(storageRef(storage, path), file);
+    await new Promise<void>((resolve, reject) => {
+      task.on(
+        'state_changed',
+        (snap) => {
+          const frac = (done + snap.bytesTransferred / snap.totalBytes) / files.length;
+          onProgress?.(Math.round(frac * 100));
+        },
+        reject,
+        async () => {
+          urls.push(await getDownloadURL(task.snapshot.ref));
+          done += 1;
+          resolve();
+        }
+      );
+    });
+  }
+  return urls;
+}
+
+/* ----------------------------------------------------------------------------
  * Small pieces
  * ------------------------------------------------------------------------- */
 
@@ -148,10 +217,108 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Preview a locally-selected File without leaking object URLs.
+function LocalPreview({ file, className }: { file: File; className?: string }) {
+  const [url, setUrl] = useState('');
+  useEffect(() => {
+    const u = URL.createObjectURL(file);
+    setUrl(u);
+    return () => URL.revokeObjectURL(u);
+  }, [file]);
+  // eslint-disable-next-line @next/next/no-img-element
+  return url ? <img src={url} alt="Selected attachment" className={className} /> : null;
+}
+
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
   show: { opacity: 1, y: 0 },
 };
+
+const cardClass =
+  'relative rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-7 md:p-9';
+
+/* ----------------------------------------------------------------------------
+ * Photo picker (shared by the create form and the edit form)
+ * ------------------------------------------------------------------------- */
+
+function PhotoPicker({
+  files,
+  onAdd,
+  onRemove,
+  existing = [],
+  onRemoveExisting,
+  disabled,
+}: {
+  files: File[];
+  onAdd: (list: FileList | null) => void;
+  onRemove: (index: number) => void;
+  existing?: string[];
+  onRemoveExisting?: (index: number) => void;
+  disabled?: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const count = files.length + existing.length;
+  return (
+    <div>
+      <div className="flex flex-wrap items-center gap-3">
+        {existing.map((src, i) => (
+          <div key={src} className="relative h-20 w-20 overflow-hidden rounded-lg border border-white/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={src} alt="Attached" className="h-full w-full object-cover" />
+            {onRemoveExisting && (
+              <button
+                type="button"
+                onClick={() => onRemoveExisting(i)}
+                aria-label="Remove photo"
+                className="absolute right-1 top-1 rounded-full bg-black/70 p-0.5 text-white/90 hover:text-white"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ))}
+        {files.map((file, i) => (
+          <div key={i} className="relative h-20 w-20 overflow-hidden rounded-lg border border-white/10">
+            <LocalPreview file={file} className="h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={() => onRemove(i)}
+              aria-label="Remove photo"
+              className="absolute right-1 top-1 rounded-full bg-black/70 p-0.5 text-white/90 hover:text-white"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+        {count < MAX_IMAGES && (
+          <button
+            type="button"
+            disabled={disabled}
+            onClick={() => inputRef.current?.click()}
+            className="flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-white/20 text-neutral-400 transition-colors hover:border-amber-300/50 hover:text-amber-100 disabled:opacity-50"
+          >
+            <ImagePlus className="h-5 w-5" />
+            <span className="text-[10px] uppercase tracking-wider">Add</span>
+          </button>
+        )}
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          onAdd(e.target.files);
+          e.target.value = '';
+        }}
+      />
+      <p className="mt-2 text-xs text-neutral-500">
+        Optional · up to {MAX_IMAGES} photos, 50&nbsp;MB total.
+      </p>
+    </div>
+  );
+}
 
 /* ----------------------------------------------------------------------------
  * Main component
@@ -162,16 +329,56 @@ export default function HalalaMemorial({
 }: {
   initialTributes: Tribute[];
 }) {
-  const [lightbox, setLightbox] = useState<number | null>(null);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [tributes, setTributes] = useState<Tribute[]>(initialTributes);
+  const [owned, setOwned] = useState<Record<string, string>>({});
 
-  // Guestbook form state
+  // Create-form state
   const [name, setName] = useState('');
   const [country, setCountry] = useState('');
   const [message, setMessage] = useState('');
+  const [files, setFiles] = useState<File[]>([]);
   const [website, setWebsite] = useState(''); // honeypot
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+  const [status, setStatus] = useState<'idle' | 'uploading' | 'submitting' | 'success' | 'error'>('idle');
   const [error, setError] = useState('');
+  const [pct, setPct] = useState(0);
+
+  // Edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [eName, setEName] = useState('');
+  const [eCountry, setECountry] = useState('');
+  const [eMessage, setEMessage] = useState('');
+  const [eExisting, setEExisting] = useState<string[]>([]);
+  const [eFiles, setEFiles] = useState<File[]>([]);
+  const [eStatus, setEStatus] = useState<'idle' | 'saving' | 'error'>('idle');
+  const [eError, setEError] = useState('');
+
+  useEffect(() => {
+    setOwned(loadOwned());
+  }, []);
+
+  function addFiles(current: File[], incoming: FileList | null, setter: (f: File[]) => void, existingCount = 0) {
+    if (!incoming || incoming.length === 0) return;
+    let next = [...current];
+    for (const f of Array.from(incoming)) {
+      if (!f.type.startsWith('image/')) {
+        setError('Only image files can be attached.');
+        continue;
+      }
+      next.push(f);
+    }
+    if (next.length + existingCount > MAX_IMAGES) {
+      setError(`You can attach up to ${MAX_IMAGES} photos.`);
+      next = next.slice(0, MAX_IMAGES - existingCount);
+    }
+    const total = next.reduce((s, f) => s + f.size, 0);
+    if (total > MAX_TOTAL_BYTES) {
+      setError('Total photo size must be under 50 MB.');
+      return;
+    }
+    setError('');
+    setter(next);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -179,21 +386,20 @@ export default function HalalaMemorial({
 
     const trimmedName = name.trim();
     const trimmedMessage = message.trim();
-    if (trimmedName.length < 1) {
-      setError('Please enter your name.');
-      return;
-    }
-    if (trimmedMessage.length < 3) {
-      setError('Please write a short message.');
-      return;
-    }
-    if (trimmedMessage.length > 800) {
-      setError('Please keep your message under 800 characters.');
-      return;
-    }
+    if (trimmedName.length < 1) return setError('Please enter your name.');
+    if (trimmedMessage.length < 3) return setError('Please write a short message.');
+    if (trimmedMessage.length > MAX_MESSAGE)
+      return setError(`Please keep your message under ${MAX_MESSAGE} characters.`);
 
-    setStatus('submitting');
     try {
+      let images: string[] = [];
+      if (files.length) {
+        setStatus('uploading');
+        setPct(0);
+        images = await uploadImages(files, setPct);
+      }
+      setStatus('submitting');
+
       const res = await fetch('/api/halala/tributes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -201,27 +407,90 @@ export default function HalalaMemorial({
           name: trimmedName,
           country: country.trim(),
           message: trimmedMessage,
+          images,
           website,
         }),
       });
       const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data?.error || 'Something went wrong. Please try again.');
-      }
+      if (!res.ok) throw new Error(data?.error || 'Something went wrong. Please try again.');
 
       if (data.tribute) {
         setTributes((prev) => [data.tribute as Tribute, ...prev]);
+        if (data.editToken) {
+          const nextOwned = { ...owned, [data.tribute.id]: data.editToken };
+          setOwned(nextOwned);
+          saveOwned(nextOwned);
+        }
       }
       setStatus('success');
       setName('');
       setCountry('');
       setMessage('');
+      setFiles([]);
+      setPct(0);
     } catch (err) {
       setStatus('error');
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     }
   }
+
+  function startEdit(t: Tribute) {
+    setEditingId(t.id);
+    setEName(t.name);
+    setECountry(t.country);
+    setEMessage(t.message);
+    setEExisting([...t.images]);
+    setEFiles([]);
+    setEStatus('idle');
+    setEError('');
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEFiles([]);
+    setEError('');
+  }
+
+  async function saveEdit(t: Tribute) {
+    setEError('');
+    const trimmedName = eName.trim();
+    const trimmedMessage = eMessage.trim();
+    if (trimmedName.length < 1) return setEError('Please enter your name.');
+    if (trimmedMessage.length < 3) return setEError('Please write a short message.');
+    if (trimmedMessage.length > MAX_MESSAGE)
+      return setEError(`Please keep your message under ${MAX_MESSAGE} characters.`);
+
+    setEStatus('saving');
+    try {
+      let newUrls: string[] = [];
+      if (eFiles.length) newUrls = await uploadImages(eFiles);
+      const images = [...eExisting, ...newUrls].slice(0, MAX_IMAGES);
+
+      const res = await fetch('/api/halala/tributes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: t.id,
+          editToken: owned[t.id],
+          name: trimmedName,
+          country: eCountry.trim(),
+          message: trimmedMessage,
+          images,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || 'Could not save your changes.');
+
+      setTributes((prev) => prev.map((x) => (x.id === t.id ? (data.tribute as Tribute) : x)));
+      setEditingId(null);
+      setEFiles([]);
+    } catch (err) {
+      setEStatus('error');
+      setEError(err instanceof Error ? err.message : 'Could not save your changes.');
+    }
+  }
+
+  const submitting = status === 'uploading' || status === 'submitting';
 
   return (
     <div className="relative min-h-screen bg-[#0a0a0f] font-sans text-neutral-200 antialiased">
@@ -334,7 +603,7 @@ export default function HalalaMemorial({
             <motion.button
               key={photo.src}
               type="button"
-              onClick={() => setLightbox(i)}
+              onClick={() => setLightboxSrc(photo.src)}
               variants={fadeUp}
               initial="hidden"
               whileInView="show"
@@ -392,7 +661,7 @@ export default function HalalaMemorial({
               whileInView="show"
               viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 0.7 }}
-              className="relative rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-7 md:p-9"
+              className={cardClass}
             >
               <span
                 aria-hidden
@@ -413,12 +682,8 @@ export default function HalalaMemorial({
                 )}
               </blockquote>
               <figcaption className="mt-6 flex flex-col border-t border-white/10 pt-4">
-                <span className="font-display text-lg tracking-wide text-amber-100">
-                  {m.from}
-                </span>
-                <span className="text-xs uppercase tracking-widest text-neutral-400">
-                  {m.role}
-                </span>
+                <span className="font-display text-lg tracking-wide text-amber-100">{m.from}</span>
+                <span className="text-xs uppercase tracking-widest text-neutral-400">{m.role}</span>
               </figcaption>
             </motion.figure>
           ))}
@@ -432,32 +697,128 @@ export default function HalalaMemorial({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
-                className="relative rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.06] to-white/[0.02] p-7 md:p-9"
+                className={cardClass}
               >
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute left-5 top-2 select-none font-display text-6xl leading-none text-amber-200/15"
-                >
-                  &ldquo;
-                </span>
-                <blockquote className="relative space-y-4">
-                  {t.message.split(/\n{2,}/).map((p, j) => (
-                    <p
-                      key={j}
-                      className="whitespace-pre-line text-[15px] leading-relaxed text-neutral-300 md:text-base"
+                {editingId === t.id ? (
+                  /* ------------------------------ Edit mode */
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <input
+                        value={eName}
+                        onChange={(e) => setEName(e.target.value)}
+                        maxLength={60}
+                        placeholder="Your name"
+                        className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-2.5 text-neutral-100 outline-none focus:border-amber-300/50"
+                      />
+                      <input
+                        value={eCountry}
+                        onChange={(e) => setECountry(e.target.value)}
+                        maxLength={60}
+                        placeholder="Country (optional)"
+                        className="w-full rounded-lg border border-white/10 bg-black/30 px-4 py-2.5 text-neutral-100 outline-none focus:border-amber-300/50"
+                      />
+                    </div>
+                    <textarea
+                      value={eMessage}
+                      onChange={(e) => setEMessage(e.target.value)}
+                      maxLength={MAX_MESSAGE}
+                      rows={5}
+                      className="w-full resize-y rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-neutral-100 outline-none focus:border-amber-300/50"
+                    />
+                    <div className="text-right text-xs text-neutral-500">
+                      {eMessage.length}/{MAX_MESSAGE}
+                    </div>
+                    <PhotoPicker
+                      files={eFiles}
+                      existing={eExisting}
+                      onAdd={(list) => addFiles(eFiles, list, setEFiles, eExisting.length)}
+                      onRemove={(idx) => setEFiles(eFiles.filter((_, i) => i !== idx))}
+                      onRemoveExisting={(idx) => setEExisting(eExisting.filter((_, i) => i !== idx))}
+                      disabled={eStatus === 'saving'}
+                    />
+                    {eError && <p className="text-sm text-red-300">{eError}</p>}
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => saveEdit(t)}
+                        disabled={eStatus === 'saving'}
+                        className="rounded-full bg-gradient-to-r from-amber-300 to-amber-200 px-5 py-2 text-sm font-semibold uppercase tracking-widest text-[#1a1408] disabled:opacity-60"
+                      >
+                        {eStatus === 'saving' ? 'Saving…' : 'Save changes'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={cancelEdit}
+                        disabled={eStatus === 'saving'}
+                        className="rounded-full border border-white/15 px-5 py-2 text-sm uppercase tracking-widest text-neutral-300 hover:text-white disabled:opacity-60"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ------------------------------ Display mode */
+                  <>
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute left-5 top-2 select-none font-display text-6xl leading-none text-amber-200/15"
                     >
-                      {p}
-                    </p>
-                  ))}
-                </blockquote>
-                <figcaption className="mt-6 flex flex-col border-t border-white/10 pt-4">
-                  <span className="font-display text-lg tracking-wide text-amber-100">
-                    {t.name}
-                  </span>
-                  <span className="text-xs uppercase tracking-widest text-neutral-400">
-                    {t.country || 'In remembrance'}
-                  </span>
-                </figcaption>
+                      &ldquo;
+                    </span>
+                    <blockquote className="relative space-y-4">
+                      {t.message.split(/\n{2,}/).map((p, j) => (
+                        <p
+                          key={j}
+                          className="whitespace-pre-line text-[15px] leading-relaxed text-neutral-300 md:text-base"
+                        >
+                          {p}
+                        </p>
+                      ))}
+                    </blockquote>
+
+                    {t.images.length > 0 && (
+                      <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                        {t.images.map((src) => (
+                          <button
+                            key={src}
+                            type="button"
+                            onClick={() => setLightboxSrc(src)}
+                            className="group relative aspect-square overflow-hidden rounded-lg border border-white/10 focus:outline-none focus:ring-2 focus:ring-amber-300/50"
+                            aria-label="View attached photo"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={src}
+                              alt="Attached tribute photo"
+                              loading="lazy"
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    <figcaption className="mt-6 flex items-end justify-between gap-4 border-t border-white/10 pt-4">
+                      <div className="flex flex-col">
+                        <span className="font-display text-lg tracking-wide text-amber-100">{t.name}</span>
+                        <span className="text-xs uppercase tracking-widest text-neutral-400">
+                          {t.country || 'In remembrance'}
+                          {t.updatedAt ? ' · edited' : ''}
+                        </span>
+                      </div>
+                      {owned[t.id] && (
+                        <button
+                          type="button"
+                          onClick={() => startEdit(t)}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-xs uppercase tracking-widest text-neutral-300 transition-colors hover:border-amber-300/50 hover:text-amber-100"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          Edit
+                        </button>
+                      )}
+                    </figcaption>
+                  </>
+                )}
               </motion.figure>
             ))}
           </AnimatePresence>
@@ -469,7 +830,8 @@ export default function HalalaMemorial({
         <SectionTitle>Leave a Tribute</SectionTitle>
         <p className="mx-auto mb-10 max-w-xl text-center text-neutral-400">
           Share a memory, a prayer, or a word of comfort for Halala&rsquo;s family and friends.
-          Your message will join the words of remembrance above.
+          You can attach photos, and edit your tribute later from this device. Your message will
+          join the words of remembrance above.
         </p>
 
         <motion.form
@@ -521,13 +883,25 @@ export default function HalalaMemorial({
               id="tribute-message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              maxLength={800}
-              rows={5}
+              maxLength={MAX_MESSAGE}
+              rows={6}
               required
               className="w-full resize-y rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-neutral-100 placeholder-neutral-500 outline-none transition-colors focus:border-amber-300/50"
               placeholder="Share your memory or condolence…"
             />
-            <div className="mt-1 text-right text-xs text-neutral-500">{message.length}/800</div>
+            <div className="mt-1 text-right text-xs text-neutral-500">
+              {message.length}/{MAX_MESSAGE}
+            </div>
+          </div>
+
+          <div className="mt-4">
+            <span className="mb-2 block text-xs uppercase tracking-widest text-neutral-400">Photos</span>
+            <PhotoPicker
+              files={files}
+              onAdd={(list) => addFiles(files, list, setFiles)}
+              onRemove={(idx) => setFiles(files.filter((_, i) => i !== idx))}
+              disabled={submitting}
+            />
           </div>
 
           {/* Honeypot — hidden from humans */}
@@ -543,18 +917,13 @@ export default function HalalaMemorial({
             />
           </div>
 
+          {error && (
+            <p className="mt-4 rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              {error}
+            </p>
+          )}
           <AnimatePresence>
-            {status === 'error' && error && (
-              <motion.p
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-4 rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
-              >
-                {error}
-              </motion.p>
-            )}
-            {status === 'success' && (
+            {status === 'success' && !error && (
               <motion.p
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -568,11 +937,13 @@ export default function HalalaMemorial({
 
           <button
             type="submit"
-            disabled={status === 'submitting'}
+            disabled={submitting}
             className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-amber-300 to-amber-200 px-6 py-3.5 font-semibold uppercase tracking-widest text-[#1a1408] transition-all hover:from-amber-200 hover:to-amber-100 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           >
-            {status === 'submitting' ? (
-              'Sending…'
+            {status === 'uploading' ? (
+              `Uploading photos… ${pct}%`
+            ) : status === 'submitting' ? (
+              'Posting…'
             ) : (
               <>
                 <Send className="h-4 w-4" />
@@ -598,17 +969,17 @@ export default function HalalaMemorial({
 
       {/* --------------------------------------------------------------- Lightbox */}
       <AnimatePresence>
-        {lightbox !== null && (
+        {lightboxSrc && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setLightbox(null)}
+            onClick={() => setLightboxSrc(null)}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
           >
             <button
               type="button"
-              onClick={() => setLightbox(null)}
+              onClick={() => setLightboxSrc(null)}
               aria-label="Close"
               className="absolute right-5 top-5 rounded-full border border-white/20 p-2 text-white/80 transition-colors hover:text-white"
             >
@@ -620,14 +991,13 @@ export default function HalalaMemorial({
               exit={{ scale: 0.92, opacity: 0 }}
               transition={{ duration: 0.25 }}
               onClick={(e) => e.stopPropagation()}
-              className="relative h-[80vh] w-full max-w-4xl"
+              className="relative flex h-[80vh] w-full max-w-4xl items-center justify-center"
             >
-              <Image
-                src={GALLERY[lightbox].src}
-                alt={GALLERY[lightbox].alt}
-                fill
-                sizes="100vw"
-                className="object-contain"
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={lightboxSrc}
+                alt="Halala Khumalo"
+                className="max-h-full max-w-full object-contain"
               />
             </motion.div>
           </motion.div>

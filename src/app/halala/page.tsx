@@ -39,7 +39,9 @@ type Tribute = {
   name: string;
   country: string;
   message: string;
+  images: string[];
   createdAt: string;
+  updatedAt?: string;
 };
 
 async function getTributes(): Promise<Tribute[]> {
@@ -64,10 +66,12 @@ async function getTributes(): Promise<Tribute[]> {
           name: data.name || 'Anonymous',
           country: data.country || '',
           message: data.message || '',
+          images: Array.isArray(data.images) ? data.images : [],
           createdAt:
             data.createdAt ||
             data.timestamp?.toDate?.().toISOString() ||
             new Date().toISOString(),
+          updatedAt: data.updatedAt || undefined,
         };
       });
   } catch (error) {
