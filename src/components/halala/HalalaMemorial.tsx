@@ -44,8 +44,14 @@ type CuratedMessage = {
 
 const MAX_IMAGES = 5;
 const MAX_TOTAL_BYTES = 50 * 1024 * 1024; // 50 MB
-const MAX_MESSAGE = 1500;
+const MAX_WORDS = 1500;
+const MESSAGE_CHAR_CAP = 20000; // safety guard for the textarea
 const OWNED_KEY = 'halala_owned_tributes';
+
+function countWords(input: string): number {
+  const t = input.trim();
+  return t ? t.split(/\s+/).length : 0;
+}
 
 const GALLERY = [
   { src: '/halala/pic1.jpeg', alt: 'Halala Khumalo' },
@@ -388,8 +394,8 @@ export default function HalalaMemorial({
     const trimmedMessage = message.trim();
     if (trimmedName.length < 1) return setError('Please enter your name.');
     if (trimmedMessage.length < 3) return setError('Please write a short message.');
-    if (trimmedMessage.length > MAX_MESSAGE)
-      return setError(`Please keep your message under ${MAX_MESSAGE} characters.`);
+    if (countWords(trimmedMessage) > MAX_WORDS)
+      return setError(`Please keep your message under ${MAX_WORDS} words.`);
 
     try {
       let images: string[] = [];
@@ -457,8 +463,8 @@ export default function HalalaMemorial({
     const trimmedMessage = eMessage.trim();
     if (trimmedName.length < 1) return setEError('Please enter your name.');
     if (trimmedMessage.length < 3) return setEError('Please write a short message.');
-    if (trimmedMessage.length > MAX_MESSAGE)
-      return setEError(`Please keep your message under ${MAX_MESSAGE} characters.`);
+    if (countWords(trimmedMessage) > MAX_WORDS)
+      return setEError(`Please keep your message under ${MAX_WORDS} words.`);
 
     setEStatus('saving');
     try {
@@ -721,12 +727,16 @@ export default function HalalaMemorial({
                     <textarea
                       value={eMessage}
                       onChange={(e) => setEMessage(e.target.value)}
-                      maxLength={MAX_MESSAGE}
+                      maxLength={MESSAGE_CHAR_CAP}
                       rows={5}
                       className="w-full resize-y rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-neutral-100 outline-none focus:border-amber-300/50"
                     />
-                    <div className="text-right text-xs text-neutral-500">
-                      {eMessage.length}/{MAX_MESSAGE}
+                    <div
+                      className={`text-right text-xs ${
+                        countWords(eMessage) > MAX_WORDS ? 'text-red-400' : 'text-neutral-500'
+                      }`}
+                    >
+                      {countWords(eMessage)}/{MAX_WORDS} words
                     </div>
                     <PhotoPicker
                       files={eFiles}
@@ -883,14 +893,18 @@ export default function HalalaMemorial({
               id="tribute-message"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              maxLength={MAX_MESSAGE}
+              maxLength={MESSAGE_CHAR_CAP}
               rows={6}
               required
               className="w-full resize-y rounded-lg border border-white/10 bg-black/30 px-4 py-3 text-neutral-100 placeholder-neutral-500 outline-none transition-colors focus:border-amber-300/50"
               placeholder="Share your memory or condolence…"
             />
-            <div className="mt-1 text-right text-xs text-neutral-500">
-              {message.length}/{MAX_MESSAGE}
+            <div
+              className={`mt-1 text-right text-xs ${
+                countWords(message) > MAX_WORDS ? 'text-red-400' : 'text-neutral-500'
+              }`}
+            >
+              {countWords(message)}/{MAX_WORDS} words
             </div>
           </div>
 

@@ -6,8 +6,14 @@ import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
 
-const MAX_MESSAGE = 1500;
+const MAX_WORDS = 1500;
+const MESSAGE_CHAR_CAP = 20000; // safety guard (well under Firestore's 1 MB doc limit)
 const MAX_IMAGES = 5;
+
+function countWords(input: string): number {
+  const t = input.trim();
+  return t ? t.split(/\s+/).length : 0;
+}
 
 // Strip control chars (except tab and newline) and collapse excessive whitespace.
 function clean(input: string): string {
@@ -25,7 +31,10 @@ const baseFields = {
     .string()
     .trim()
     .min(3, 'Please write a short message.')
-    .max(MAX_MESSAGE, `Please keep your message under ${MAX_MESSAGE} characters.`),
+    .max(MESSAGE_CHAR_CAP, 'Please shorten your message.')
+    .refine((s) => countWords(s) <= MAX_WORDS, {
+      message: `Please keep your message under ${MAX_WORDS} words.`,
+    }),
   country: z.string().trim().max(60).optional().default(''),
   images: z.array(z.string().url()).max(MAX_IMAGES).optional().default([]),
 };
