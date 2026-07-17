@@ -11,7 +11,8 @@ export default function ConditionalNavbar() {
         pathname?.startsWith('/admin/afcon25') ||
         pathname?.startsWith('/admin/basketball') ||
         pathname?.startsWith('/diaries') ||
-        pathname?.startsWith('/basketball')
+        pathname?.startsWith('/basketball') ||
+        pathname?.startsWith('/halala')
     ) {
         return null;
     }
