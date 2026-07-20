@@ -118,6 +118,47 @@ export class MemorialBroadcaster {
         return this.localStream!;
     }
 
+    /**
+     * Native camera zoom, where the hardware exposes it (Android Chrome does;
+     * iOS Safari does not). Returns null when unsupported so the UI can hide
+     * the control rather than show one that does nothing.
+     *
+     * This zooms the actual published track, so viewers see it too — a CSS
+     * transform would only scale the local preview.
+     */
+    getZoomRange(): { min: number; max: number; step: number; current: number } | null {
+        const track = this.localStream?.getVideoTracks()[0];
+        if (!track?.getCapabilities) return null;
+
+        const caps = track.getCapabilities() as MediaTrackCapabilities & {
+            zoom?: { min: number; max: number; step?: number };
+        };
+        if (!caps.zoom || caps.zoom.max <= caps.zoom.min) return null;
+
+        const settings = track.getSettings() as MediaTrackSettings & { zoom?: number };
+
+        return {
+            min: caps.zoom.min,
+            max: caps.zoom.max,
+            step: caps.zoom.step || 0.1,
+            current: settings.zoom ?? caps.zoom.min,
+        };
+    }
+
+    async setZoom(value: number): Promise<boolean> {
+        const track = this.localStream?.getVideoTracks()[0];
+        if (!track) return false;
+
+        try {
+            await track.applyConstraints({
+                advanced: [{ zoom: value } as unknown as MediaTrackConstraintSet],
+            });
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
     toggleMic(): boolean {
         const track = this.localStream?.getAudioTracks()[0];
         if (!track) return false;
@@ -297,7 +338,11 @@ export class MemorialViewer {
         }
         const { token, url } = await res.json();
 
-        this.room = new Room({ adaptiveStream: true, dynacast: true });
+        // adaptiveStream pauses tracks whose <video> element isn't visible, which
+        // would cut the feed the moment a mourner switches tabs or enters
+        // picture-in-picture. Keeping it off costs a little bandwidth and keeps
+        // the service playing in the background — the right trade for <100 viewers.
+        this.room = new Room({ adaptiveStream: false, dynacast: true });
 
         this.room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
             if (track.kind === Track.Kind.Video || track.kind === Track.Kind.Audio) {

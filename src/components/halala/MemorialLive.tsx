@@ -31,7 +31,16 @@ import {
     MAX_MESSAGE_LENGTH,
     type MemorialStreamStatus,
 } from '@/types/memorialStream';
-import { Volume2, VolumeX, Maximize, Users, Send, Loader2, Radio } from 'lucide-react';
+import {
+    Volume2,
+    VolumeX,
+    Maximize,
+    PictureInPicture,
+    Users,
+    Send,
+    Loader2,
+    Radio,
+} from 'lucide-react';
 
 const GUEST_ID_KEY = 'halala_stream_guest_id';
 const GUEST_NAME_KEY = 'halala_stream_guest_name';
@@ -75,6 +84,8 @@ export default function MemorialLive() {
     const [playbackError, setPlaybackError] = useState('');
     const [needsTapToPlay, setNeedsTapToPlay] = useState(false);
     const [muted, setMuted] = useState(true);
+    const [pipSupported, setPipSupported] = useState(false);
+    const [pipError, setPipError] = useState('');
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [floating, setFloating] = useState<FloatingReaction[]>([]);
@@ -95,6 +106,29 @@ export default function MemorialLive() {
     useEffect(() => {
         const stored = localStorage.getItem(GUEST_NAME_KEY);
         if (stored) setGuestName(stored);
+    }, []);
+
+    // iPhone Safari doesn't set pictureInPictureEnabled but supports PiP on the
+    // video element through its own webkit presentation-mode API.
+    useEffect(() => {
+        const video = document.createElement('video') as HTMLVideoElement & {
+            webkitSupportsPresentationMode?: (mode: string) => boolean;
+        };
+        setPipSupported(
+            document.pictureInPictureEnabled ||
+                typeof video.webkitSupportsPresentationMode === 'function'
+        );
+    }, []);
+
+    // Coming back to the tab, some browsers leave the element paused.
+    useEffect(() => {
+        function resume() {
+            if (document.visibilityState === 'visible') {
+                videoRef.current?.play().catch(() => undefined);
+            }
+        }
+        document.addEventListener('visibilitychange', resume);
+        return () => document.removeEventListener('visibilitychange', resume);
     }, []);
 
     // ── Stream status (realtime) ──────────────────────────────────────────
@@ -318,6 +352,39 @@ export default function MemorialLive() {
         videoRef.current?.requestFullscreen?.().catch(() => undefined);
     }
 
+    /**
+     * Picture-in-picture keeps the service playing in a floating window while
+     * the viewer uses other tabs or apps. A web page can't survive the browser
+     * being closed entirely, so this is as close to "keep watching after you
+     * leave" as the platform allows.
+     */
+    async function togglePip() {
+        const video = videoRef.current;
+        if (!video) return;
+
+        const webkitVideo = video as HTMLVideoElement & {
+            webkitSetPresentationMode?: (mode: string) => void;
+            webkitPresentationMode?: string;
+        };
+
+        try {
+            if (typeof webkitVideo.webkitSetPresentationMode === 'function') {
+                webkitVideo.webkitSetPresentationMode(
+                    webkitVideo.webkitPresentationMode === 'picture-in-picture'
+                        ? 'inline'
+                        : 'picture-in-picture'
+                );
+            } else if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture();
+            } else {
+                await video.requestPictureInPicture();
+            }
+        } catch {
+            setPipError('Your browser blocked picture-in-picture.');
+            setTimeout(() => setPipError(''), 4000);
+        }
+    }
+
     const isLive = status === 'live';
 
     return (
@@ -452,6 +519,16 @@ export default function MemorialLive() {
                             >
                                 {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                             </button>
+                            {pipSupported && (
+                                <button
+                                    onClick={togglePip}
+                                    aria-label="Keep watching in a floating window"
+                                    title="Keep watching while you use other apps"
+                                    className="rounded-full bg-black/50 p-2.5 text-neutral-200 backdrop-blur transition-colors hover:bg-black/70"
+                                >
+                                    <PictureInPicture className="h-4 w-4" />
+                                </button>
+                            )}
                             <button
                                 onClick={goFullscreen}
                                 aria-label="Fullscreen"
@@ -466,6 +543,12 @@ export default function MemorialLive() {
                 {title && isLive && (
                     <p className="border-t border-white/5 px-5 py-3 text-center text-sm tracking-wide text-neutral-300">
                         {title}
+                    </p>
+                )}
+
+                {isLive && pipSupported && (
+                    <p className="border-t border-white/5 px-5 py-2.5 text-center text-xs text-neutral-500">
+                        {pipError || 'Tap the floating-window icon to keep watching while you use other apps.'}
                     </p>
                 )}
             </div>

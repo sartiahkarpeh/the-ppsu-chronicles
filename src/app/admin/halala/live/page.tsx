@@ -23,6 +23,9 @@ import {
     Users,
     Loader2,
     ExternalLink,
+    Maximize,
+    Plus,
+    Minus,
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -48,10 +51,12 @@ export default function MemorialBroadcastPage() {
     const [cameraOn, setCameraOn] = useState(true);
     const [viewerCount, setViewerCount] = useState(0);
     const [duration, setDuration] = useState(0);
+    const [zoom, setZoom] = useState<{ min: number; max: number; step: number; current: number } | null>(null);
     const [connectionState, setConnectionState] = useState('');
     const [title, setTitle] = useState('');
 
     const videoRef = useRef<HTMLVideoElement>(null);
+    const previewWrapRef = useRef<HTMLDivElement>(null);
     const broadcasterRef = useRef<MemorialBroadcaster | null>(null);
     const isLiveRef = useRef(false);
 
@@ -107,6 +112,7 @@ export default function MemorialBroadcastPage() {
             setPreviewReady(true);
             setMicOn(true);
             setCameraOn(true);
+            setZoom(broadcaster.getZoomRange());
         } catch (error) {
             console.error('[MemorialBroadcast] Camera error:', error);
             setPermissionError(
@@ -153,6 +159,25 @@ export default function MemorialBroadcastPage() {
         const timer = setInterval(() => setDuration((d) => d + 1), 1000);
         return () => clearInterval(timer);
     }, [isLive]);
+
+    async function applyZoom(next: number) {
+        if (!zoom) return;
+        const clamped = Math.min(zoom.max, Math.max(zoom.min, next));
+        // Move the slider immediately; the camera catches up.
+        setZoom({ ...zoom, current: clamped });
+        await broadcasterRef.current?.setZoom(clamped);
+    }
+
+    function toggleFullscreen() {
+        const el = previewWrapRef.current;
+        if (!el) return;
+
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => undefined);
+        } else {
+            el.requestFullscreen?.().catch(() => undefined);
+        }
+    }
 
     async function goLive() {
         if (!broadcasterRef.current) return;
@@ -246,15 +271,59 @@ export default function MemorialBroadcastPage() {
 
             <main className="mx-auto max-w-2xl px-4 py-6">
                 {/* Preview */}
-                <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black">
+                <div
+                    ref={previewWrapRef}
+                    className="relative overflow-hidden rounded-2xl border border-white/10 bg-black"
+                >
                     <div className="relative aspect-video w-full">
                         <video
                             ref={videoRef}
                             playsInline
                             autoPlay
                             muted
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-contain"
                         />
+
+                        {/* Fullscreen — matches the control viewers get */}
+                        {previewReady && (
+                            <button
+                                onClick={toggleFullscreen}
+                                aria-label="Toggle fullscreen"
+                                className="absolute bottom-3 right-3 rounded-full bg-black/50 p-2.5 text-neutral-200 backdrop-blur transition-colors hover:bg-black/70"
+                            >
+                                <Maximize className="h-4 w-4" />
+                            </button>
+                        )}
+
+                        {/* Zoom — only rendered when the camera actually supports it */}
+                        {previewReady && zoom && (
+                            <div className="absolute bottom-3 left-1/2 flex w-[min(20rem,80%)] -translate-x-1/2 items-center gap-3 rounded-full bg-black/50 px-4 py-2 backdrop-blur">
+                                <button
+                                    onClick={() => applyZoom(zoom.current - zoom.step * 4)}
+                                    aria-label="Zoom out"
+                                    className="text-neutral-200 transition-colors hover:text-white"
+                                >
+                                    <Minus className="h-4 w-4" />
+                                </button>
+                                <input
+                                    type="range"
+                                    min={zoom.min}
+                                    max={zoom.max}
+                                    step={zoom.step}
+                                    value={zoom.current}
+                                    onChange={(e) => applyZoom(Number(e.target.value))}
+                                    aria-label="Camera zoom"
+                                    className="h-1 flex-1 cursor-pointer appearance-none rounded-full bg-white/25 accent-amber-200"
+                                />
+                                <button
+                                    onClick={() => applyZoom(zoom.current + zoom.step * 4)}
+                                    aria-label="Zoom in"
+                                    className="text-neutral-200 transition-colors hover:text-white"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                </button>
+                            </div>
+                        )}
 
                         {!previewReady && !permissionError && (
                             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
@@ -331,6 +400,8 @@ export default function MemorialBroadcastPage() {
                             try {
                                 const stream = await broadcasterRef.current?.switchCamera();
                                 if (stream && videoRef.current) videoRef.current.srcObject = stream;
+                                // Front and rear cameras expose different zoom ranges.
+                                setZoom(broadcasterRef.current?.getZoomRange() ?? null);
                             } catch {
                                 toast.error('Could not switch camera.');
                             }
