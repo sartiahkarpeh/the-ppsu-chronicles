@@ -20,6 +20,7 @@ import {
   ImagePlus,
   Pencil,
 } from 'lucide-react';
+import MemorialLive from './MemorialLive';
 
 /* ----------------------------------------------------------------------------
  * Types, constants & data
@@ -600,6 +601,9 @@ export default function HalalaMemorial({
           </p>
         </motion.div>
       </section>
+
+      {/* --------------------------------------------------------------- Live service */}
+      <MemorialLive />
 
       {/* ------------------------------------------------------------------ Gallery */}
       <section className="relative z-10 mx-auto max-w-6xl px-6 py-16">

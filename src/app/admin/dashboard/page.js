@@ -119,6 +119,7 @@ export default function SuperAdminDashboard() {
     basketball: { name: '🏀 Basketball Admin', collectionName: null, fields: [], isExternal: true, path: '/admin/basketball' },
     valentines: { name: '💕 Valentine\'s Exchange', collectionName: null, fields: [], isExternal: true, path: '/admin/valentines' },
     diaries: { name: '📝 Student Diaries', collectionName: null, fields: [], isExternal: true, path: '/admin/diaries' },
+    halala_live: { name: '🕯️ Halala Memorial Live', collectionName: null, fields: [], isExternal: true, path: '/admin/halala/live' },
     contact_messages: { name: 'Contact Messages', collectionName: 'contactmessages', fields: [] },
   }), []);
 

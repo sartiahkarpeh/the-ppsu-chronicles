@@ -5,12 +5,45 @@
  */
 
 const admin = require('firebase-admin');
-const serviceAccount = require('../serviceAccountKey.json');
+const fs = require('fs');
+const path = require('path');
 
-// Initialize Firebase Admin
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+/**
+ * Credentials come from serviceAccountKey.json if present, otherwise from
+ * .env.local — the same FIREBASE_* vars the app itself uses, so this script
+ * works on a fresh checkout without an extra key file.
+ */
+function loadCredential() {
+  const keyPath = path.join(__dirname, '..', 'serviceAccountKey.json');
+  if (fs.existsSync(keyPath)) {
+    return admin.credential.cert(require(keyPath));
+  }
+
+  const envPath = path.join(__dirname, '..', '.env.local');
+  if (!fs.existsSync(envPath)) {
+    console.error('❌ Need either serviceAccountKey.json or .env.local with FIREBASE_* vars.');
+    process.exit(1);
+  }
+
+  const env = {};
+  for (const line of fs.readFileSync(envPath, 'utf8').split('\n')) {
+    const match = line.match(/^([A-Z_]+)=(.*)$/);
+    if (match) env[match[1]] = match[2].replace(/^["']|["']$/g, '');
+  }
+
+  if (!env.FIREBASE_PROJECT_ID || !env.FIREBASE_CLIENT_EMAIL || !env.FIREBASE_PRIVATE_KEY) {
+    console.error('❌ .env.local is missing FIREBASE_PROJECT_ID / CLIENT_EMAIL / PRIVATE_KEY.');
+    process.exit(1);
+  }
+
+  return admin.credential.cert({
+    projectId: env.FIREBASE_PROJECT_ID,
+    clientEmail: env.FIREBASE_CLIENT_EMAIL,
+    privateKey: env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  });
+}
+
+admin.initializeApp({ credential: loadCredential() });
 
 /**
  * Set custom claims (role) for a user

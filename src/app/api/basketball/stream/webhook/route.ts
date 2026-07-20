@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WebhookReceiver } from 'livekit-server-sdk';
 import { getAdminDb } from '@/lib/firebaseAdmin';
+import {
+    MEMORIAL_ROOM,
+    MEMORIAL_STREAM_COLLECTION,
+    MEMORIAL_STREAM_DOC_ID,
+} from '@/types/memorialStream';
 
 export async function POST(request: NextRequest) {
     const apiKey = process.env.LIVEKIT_API_KEY;
@@ -25,7 +30,57 @@ export async function POST(request: NextRequest) {
         }
 
         const roomName = event.room?.name;
-        if (!roomName || !roomName.startsWith('basketball-game-')) {
+        if (!roomName) {
+            return NextResponse.json({ received: true });
+        }
+
+        // The Halala memorial stream shares this webhook URL so LiveKit only
+        // needs one endpoint configured. It has its own single status document.
+        if (roomName === MEMORIAL_ROOM) {
+            const streamRef = db
+                .collection(MEMORIAL_STREAM_COLLECTION)
+                .doc(MEMORIAL_STREAM_DOC_ID);
+
+            switch (event.event) {
+                case 'room_started': {
+                    await streamRef.set(
+                        { status: 'live', startedAt: new Date(), endedAt: null, updatedAt: new Date() },
+                        { merge: true }
+                    );
+                    break;
+                }
+                case 'room_finished': {
+                    await streamRef.set(
+                        {
+                            status: 'ended',
+                            endedAt: new Date(),
+                            currentViewers: 0,
+                            updatedAt: new Date(),
+                        },
+                        { merge: true }
+                    );
+                    break;
+                }
+                case 'participant_joined':
+                case 'participant_left': {
+                    // numParticipants includes the broadcaster.
+                    const viewerCount = Math.max(0, (event.room?.numParticipants || 0) - 1);
+                    const snap = await streamRef.get();
+                    const peak = Math.max(snap.data()?.viewerPeak || 0, viewerCount);
+
+                    await streamRef.set(
+                        { currentViewers: viewerCount, viewerPeak: peak, updatedAt: new Date() },
+                        { merge: true }
+                    );
+                    break;
+                }
+            }
+
+            console.log(`[LiveKit Webhook] Memorial stream event: ${event.event}`);
+            return NextResponse.json({ received: true });
+        }
+
+        if (!roomName.startsWith('basketball-game-')) {
             return NextResponse.json({ received: true });
         }
 

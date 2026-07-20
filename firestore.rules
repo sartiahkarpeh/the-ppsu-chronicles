@@ -101,6 +101,25 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ─── Halala Memorial Live Stream ──────────────────────────
+    // Public reads power the realtime "live now" badge, chat and reactions on
+    // /halala. All writes go through API routes using the Admin SDK (which
+    // bypasses these rules), so clients never need write access here.
+    match /halala_stream/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /halala_stream_messages/{messageId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /halala_stream_reactions/{reactionId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Deny all other collections by default
     match /{document=**} {
       allow read, write: if false;

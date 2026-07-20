@@ -5,9 +5,11 @@
 
 import { initializeApp, getApps, cert, App } from 'firebase-admin/app';
 import { getFirestore, Firestore } from 'firebase-admin/firestore';
+import { getAuth, Auth } from 'firebase-admin/auth';
 
 let adminApp: App | null = null;
 let adminDb: Firestore | null = null;
+let adminAuth: Auth | null = null;
 
 function getAdminApp(): App | null {
     if (getApps().length === 0) {
@@ -46,6 +48,15 @@ export function getAdminDb(): Firestore | null {
         adminDb = getFirestore();
     }
     return adminDb;
+}
+
+export function getAdminAuth(): Auth | null {
+    if (!adminAuth) {
+        const app = getAdminApp();
+        if (!app) return null;
+        adminAuth = getAuth(app);
+    }
+    return adminAuth;
 }
 
 export { getAdminApp };
