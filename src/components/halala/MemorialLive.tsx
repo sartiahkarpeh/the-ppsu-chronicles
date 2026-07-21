@@ -37,6 +37,7 @@ import {
     Volume2,
     VolumeX,
     Maximize,
+    Minimize,
     PictureInPicture,
     Users,
     Send,
@@ -89,6 +90,7 @@ export default function MemorialLive() {
     const [muted, setMuted] = useState(true);
     const [pipSupported, setPipSupported] = useState(false);
     const [pipError, setPipError] = useState('');
+    const [pseudoFullscreen, setPseudoFullscreen] = useState(false);
 
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [floating, setFloating] = useState<FloatingReaction[]>([]);
@@ -123,6 +125,25 @@ export default function MemorialLive() {
                 typeof video.webkitSupportsPresentationMode === 'function'
         );
     }, []);
+
+    // While the player is filling the viewport by CSS, stop the page behind it
+    // from scrolling and let Escape back out the way real fullscreen would.
+    useEffect(() => {
+        if (!pseudoFullscreen) return;
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        function onKeyDown(event: KeyboardEvent) {
+            if (event.key === 'Escape') setPseudoFullscreen(false);
+        }
+        document.addEventListener('keydown', onKeyDown);
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, [pseudoFullscreen]);
 
     // Coming back to the tab, some browsers leave the element paused.
     useEffect(() => {
@@ -161,6 +182,9 @@ export default function MemorialLive() {
     // ── Join / leave the LiveKit room as status changes ───────────────────
     useEffect(() => {
         if (status !== 'live') {
+            // Never leave someone stranded in a black full-viewport player once
+            // the service ends and the controls go away.
+            setPseudoFullscreen(false);
             viewerRef.current?.destroy();
             viewerRef.current = null;
             if (videoRef.current) videoRef.current.srcObject = null;
@@ -355,22 +379,29 @@ export default function MemorialLive() {
         if (!next) videoRef.current.play().catch(() => undefined);
     }
 
+    /**
+     * iPhone Safari has no element fullscreen at all, and refuses even the
+     * video element's own fullscreen when it is playing a MediaStream — so a
+     * WebRTC feed can never go natively fullscreen there. Fall back to filling
+     * the viewport with CSS, which behaves the same on every browser.
+     */
     function goFullscreen() {
-        const wrap = playerRef.current;
-        const video = videoRef.current as
-            | (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
-            | null;
-
         if (document.fullscreenElement) {
             document.exitFullscreen().catch(() => undefined);
-        } else if (wrap?.requestFullscreen) {
+            return;
+        }
+        if (pseudoFullscreen) {
+            setPseudoFullscreen(false);
+            return;
+        }
+
+        const wrap = playerRef.current;
+        if (wrap?.requestFullscreen) {
             // Fullscreen the whole player, so a photo held over the feed and the
             // live badge come with it rather than being left behind.
-            wrap.requestFullscreen().catch(() => undefined);
-        } else if (video?.webkitEnterFullscreen) {
-            // iPhone Safari can only fullscreen the video element itself, so a
-            // held photo won't follow — the sound and picture still do.
-            video.webkitEnterFullscreen();
+            wrap.requestFullscreen().catch(() => setPseudoFullscreen(true));
+        } else {
+            setPseudoFullscreen(true);
         }
     }
 
@@ -429,7 +460,14 @@ export default function MemorialLive() {
 
             {/* ── Player ────────────────────────────────────────────────── */}
             <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/60 shadow-[0_0_60px_rgba(0,0,0,0.5)]">
-                <div ref={playerRef} className="relative aspect-video w-full bg-black">
+                <div
+                    ref={playerRef}
+                    className={
+                        pseudoFullscreen
+                            ? 'fixed inset-0 z-50 bg-black'
+                            : 'relative aspect-video w-full bg-black'
+                    }
+                >
                     <video
                         ref={videoRef}
                         playsInline
@@ -439,27 +477,24 @@ export default function MemorialLive() {
                     />
 
                     {/* A photo held over the feed by the broadcaster — the
-                        service keeps playing underneath it. */}
-                    <AnimatePresence>
-                        {isLive && photo && (
-                            <motion.div
-                                key={photo}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.5 }}
-                                className="absolute inset-0 bg-black"
-                            >
-                                <Image
-                                    src={photo}
-                                    alt="Halala Khumalo"
-                                    fill
-                                    sizes="(max-width: 768px) 100vw, 960px"
-                                    className="object-contain"
-                                />
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
+                        service keeps playing underneath it.
+
+                        Deliberately a plain element, not a motion/AnimatePresence
+                        pair: an exiting keyed child jammed the presence queue and
+                        left the overlay stuck at opacity 0, so no later photo ever
+                        appeared. A hard cut is also easier to read from the back
+                        of a room than a cross-fade. */}
+                    {isLive && photo && (
+                        <div className="absolute inset-0 bg-black">
+                            <Image
+                                src={photo}
+                                alt="Halala Khumalo"
+                                fill
+                                sizes="(max-width: 768px) 100vw, 960px"
+                                className="object-contain"
+                            />
+                        </div>
+                    )}
 
                     {/* Floating reactions */}
                     <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -576,10 +611,14 @@ export default function MemorialLive() {
                             )}
                             <button
                                 onClick={goFullscreen}
-                                aria-label="Fullscreen"
+                                aria-label={pseudoFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
                                 className="rounded-full bg-black/50 p-2.5 text-neutral-200 backdrop-blur transition-colors hover:bg-black/70"
                             >
-                                <Maximize className="h-4 w-4" />
+                                {pseudoFullscreen ? (
+                                    <Minimize className="h-4 w-4" />
+                                ) : (
+                                    <Maximize className="h-4 w-4" />
+                                )}
                             </button>
                         </div>
                     )}
