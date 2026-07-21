@@ -3,16 +3,30 @@ import { z } from 'zod';
 import { getAdminDb } from '@/lib/firebaseAdmin';
 import { verifyAdmin } from '@/lib/adminAuth';
 import {
+    MEMORIAL_PHOTO_SRCS,
     MEMORIAL_STREAM_COLLECTION,
     MEMORIAL_STREAM_DOC_ID,
 } from '@/types/memorialStream';
 
 export const dynamic = 'force-dynamic';
 
-const actionSchema = z.object({
-    action: z.enum(['start', 'end']),
-    title: z.string().trim().max(120).optional().default(''),
-});
+const actionSchema = z.discriminatedUnion('action', [
+    z.object({
+        action: z.literal('start'),
+        title: z.string().trim().max(120).optional().default(''),
+    }),
+    z.object({ action: z.literal('end') }),
+    z.object({
+        // Only a known /public/halala path, never an arbitrary URL.
+        action: z.literal('photo'),
+        photo: z
+            .string()
+            .nullable()
+            .refine((value) => value === null || MEMORIAL_PHOTO_SRCS.includes(value), {
+                message: 'Unknown photo.',
+            }),
+    }),
+]);
 
 function streamDoc() {
     const db = getAdminDb();
@@ -44,6 +58,7 @@ export async function GET() {
             currentViewers: data.currentViewers || 0,
             viewerPeak: data.viewerPeak || 0,
             title: data.title || '',
+            photo: data.photo || null,
             startedAt: data.startedAt?.toDate?.().toISOString() || null,
             endedAt: data.endedAt?.toDate?.().toISOString() || null,
         });
@@ -80,6 +95,11 @@ export async function POST(request: NextRequest) {
     const now = new Date();
 
     try {
+        if (parsed.action === 'photo') {
+            await ref.set({ photo: parsed.photo, updatedAt: now }, { merge: true });
+            return NextResponse.json({ success: true, photo: parsed.photo });
+        }
+
         if (parsed.action === 'start') {
             await ref.set(
                 {
@@ -89,6 +109,8 @@ export async function POST(request: NextRequest) {
                     currentViewers: 0,
                     viewerPeak: 0,
                     title: parsed.title,
+                    // Never open a service still holding the last one's photo.
+                    photo: null,
                     broadcasterUid: check.uid,
                     updatedAt: now,
                 },
@@ -100,6 +122,7 @@ export async function POST(request: NextRequest) {
                     status: 'ended',
                     endedAt: now,
                     currentViewers: 0,
+                    photo: null,
                     updatedAt: now,
                 },
                 { merge: true }

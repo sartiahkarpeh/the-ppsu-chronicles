@@ -9,6 +9,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     collection,
@@ -25,6 +26,7 @@ import { MemorialViewer } from '@/lib/stream/memorialStream';
 import {
     MEMORIAL_MESSAGES,
     MEMORIAL_REACTIONS,
+    MEMORIAL_PHOTO_SRCS,
     MEMORIAL_REACTION_EMOJIS as REACTIONS,
     MEMORIAL_STREAM_COLLECTION,
     MEMORIAL_STREAM_DOC_ID,
@@ -78,6 +80,7 @@ function formatTime(date: Date | null): string {
 export default function MemorialLive() {
     const [status, setStatus] = useState<MemorialStreamStatus>('offline');
     const [title, setTitle] = useState('');
+    const [photo, setPhoto] = useState<string | null>(null);
     const [viewerCount, setViewerCount] = useState(0);
 
     const [connecting, setConnecting] = useState(false);
@@ -97,6 +100,7 @@ export default function MemorialLive() {
     const [chatError, setChatError] = useState('');
 
     const videoRef = useRef<HTMLVideoElement>(null);
+    const playerRef = useRef<HTMLDivElement>(null);
     const viewerRef = useRef<MemorialViewer | null>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
     const seenReactions = useRef<Set<string>>(new Set());
@@ -140,6 +144,9 @@ export default function MemorialLive() {
                 const data = snap.data();
                 setStatus((data?.status as MemorialStreamStatus) || 'offline');
                 setTitle(data?.title || '');
+                // Only ever render one of the memorial's own photos.
+                const nextPhoto = data?.photo as string | undefined;
+                setPhoto(nextPhoto && MEMORIAL_PHOTO_SRCS.includes(nextPhoto) ? nextPhoto : null);
                 if (typeof data?.currentViewers === 'number') {
                     setViewerCount(data.currentViewers);
                 }
@@ -349,7 +356,22 @@ export default function MemorialLive() {
     }
 
     function goFullscreen() {
-        videoRef.current?.requestFullscreen?.().catch(() => undefined);
+        const wrap = playerRef.current;
+        const video = videoRef.current as
+            | (HTMLVideoElement & { webkitEnterFullscreen?: () => void })
+            | null;
+
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => undefined);
+        } else if (wrap?.requestFullscreen) {
+            // Fullscreen the whole player, so a photo held over the feed and the
+            // live badge come with it rather than being left behind.
+            wrap.requestFullscreen().catch(() => undefined);
+        } else if (video?.webkitEnterFullscreen) {
+            // iPhone Safari can only fullscreen the video element itself, so a
+            // held photo won't follow — the sound and picture still do.
+            video.webkitEnterFullscreen();
+        }
     }
 
     /**
@@ -407,7 +429,7 @@ export default function MemorialLive() {
 
             {/* ── Player ────────────────────────────────────────────────── */}
             <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-black/60 shadow-[0_0_60px_rgba(0,0,0,0.5)]">
-                <div className="relative aspect-video w-full bg-black">
+                <div ref={playerRef} className="relative aspect-video w-full bg-black">
                     <video
                         ref={videoRef}
                         playsInline
@@ -415,6 +437,29 @@ export default function MemorialLive() {
                         muted={muted}
                         className={`h-full w-full object-contain ${isLive ? '' : 'hidden'}`}
                     />
+
+                    {/* A photo held over the feed by the broadcaster — the
+                        service keeps playing underneath it. */}
+                    <AnimatePresence>
+                        {isLive && photo && (
+                            <motion.div
+                                key={photo}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.5 }}
+                                className="absolute inset-0 bg-black"
+                            >
+                                <Image
+                                    src={photo}
+                                    alt="Halala Khumalo"
+                                    fill
+                                    sizes="(max-width: 768px) 100vw, 960px"
+                                    className="object-contain"
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* Floating reactions */}
                     <div className="pointer-events-none absolute inset-0 overflow-hidden">

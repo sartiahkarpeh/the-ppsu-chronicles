@@ -8,11 +8,13 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/firebase/config';
-import { MemorialBroadcaster } from '@/lib/stream/memorialStream';
+import { MemorialBroadcaster, setMemorialPhoto } from '@/lib/stream/memorialStream';
+import { MEMORIAL_PHOTOS } from '@/types/memorialStream';
 import {
     ArrowLeft,
     Mic,
@@ -28,6 +30,10 @@ import {
     Minus,
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+
+/** Minimal shape of the Screen Wake Lock API, which TS's DOM lib may not have. */
+type WakeLockSentinelish = { release: () => Promise<void> };
+type WakeLockish = { request: (type: 'screen') => Promise<WakeLockSentinelish> };
 
 function formatDuration(seconds: number): string {
     const h = Math.floor(seconds / 3600);
@@ -52,6 +58,7 @@ export default function MemorialBroadcastPage() {
     const [viewerCount, setViewerCount] = useState(0);
     const [duration, setDuration] = useState(0);
     const [zoom, setZoom] = useState<{ min: number; max: number; step: number; current: number } | null>(null);
+    const [photo, setPhoto] = useState<string | null>(null);
     const [connectionState, setConnectionState] = useState('');
     const [title, setTitle] = useState('');
 
@@ -160,6 +167,63 @@ export default function MemorialBroadcastPage() {
         return () => clearInterval(timer);
     }, [isLive]);
 
+    /**
+     * A phone left untouched locks its screen after a minute or two, which
+     * suspends the camera and drops the broadcast. Hold a screen wake lock for
+     * as long as we're live. The lock is released automatically whenever the
+     * tab is backgrounded, so re-acquire it on the way back.
+     */
+    useEffect(() => {
+        if (!isLive) return;
+
+        const wakeLock = (navigator as unknown as { wakeLock?: WakeLockish }).wakeLock;
+        if (!wakeLock) return;
+
+        let sentinel: WakeLockSentinelish | null = null;
+        let stopped = false;
+
+        async function acquire() {
+            try {
+                const next = await wakeLock!.request('screen');
+                if (stopped) {
+                    next.release().catch(() => undefined);
+                    return;
+                }
+                sentinel = next;
+            } catch {
+                // Unsupported or refused — the on-screen note still tells the
+                // broadcaster to keep the screen awake.
+            }
+        }
+
+        function reacquire() {
+            if (document.visibilityState === 'visible') acquire();
+        }
+
+        acquire();
+        document.addEventListener('visibilitychange', reacquire);
+
+        return () => {
+            stopped = true;
+            document.removeEventListener('visibilitychange', reacquire);
+            sentinel?.release().catch(() => undefined);
+        };
+    }, [isLive]);
+
+    /** Hold a photo over the live feed, or tap the active one to go back to camera. */
+    async function choosePhoto(src: string | null) {
+        const next = photo === src ? null : src;
+        const previous = photo;
+
+        setPhoto(next); // Optimistic — the picker should feel instant on stage.
+        try {
+            await setMemorialPhoto(next);
+        } catch (error) {
+            setPhoto(previous);
+            toast.error(error instanceof Error ? error.message : 'Could not change the photo.');
+        }
+    }
+
     async function applyZoom(next: number) {
         if (!zoom) return;
         const clamped = Math.min(zoom.max, Math.max(zoom.min, next));
@@ -185,6 +249,7 @@ export default function MemorialBroadcastPage() {
         try {
             await broadcasterRef.current.startStream(title.trim());
             setIsLive(true);
+            setPhoto(null); // Going live clears any photo server-side too.
             toast.success('You are live on /halala');
         } catch (error) {
             console.error('[MemorialBroadcast] Failed to go live:', error);
@@ -201,6 +266,7 @@ export default function MemorialBroadcastPage() {
             await broadcasterRef.current.endStream();
             setIsLive(false);
             setPreviewReady(false);
+            setPhoto(null);
             broadcasterRef.current = null;
             toast.success('Stream ended');
         } catch (error) {
@@ -412,6 +478,66 @@ export default function MemorialBroadcastPage() {
                     >
                         <SwitchCamera className="h-5 w-5" />
                     </button>
+                </div>
+
+                {/* Service photos — held over the live feed for everyone watching */}
+                <div className="mt-8">
+                    <div className="mb-3 flex items-baseline justify-between gap-4">
+                        <span className="text-xs uppercase tracking-[0.2em] text-neutral-500">
+                            Photo on screen
+                        </span>
+                        {photo && (
+                            <button
+                                onClick={() => choosePhoto(null)}
+                                className="text-xs uppercase tracking-widest text-amber-200/80 transition-colors hover:text-amber-100"
+                            >
+                                Back to camera
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-3">
+                        {MEMORIAL_PHOTOS.map((item) => {
+                            const active = photo === item.src;
+                            return (
+                                <button
+                                    key={item.src}
+                                    onClick={() => choosePhoto(item.src)}
+                                    disabled={!isLive}
+                                    aria-pressed={active}
+                                    aria-label={
+                                        active
+                                            ? `${item.label} — on screen, tap to return to camera`
+                                            : `Show ${item.label} to viewers`
+                                    }
+                                    className={`relative aspect-[3/4] overflow-hidden rounded-xl border transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
+                                        active
+                                            ? 'border-amber-200/70 ring-2 ring-amber-200/40'
+                                            : 'border-white/10 hover:border-amber-200/30'
+                                    }`}
+                                >
+                                    <Image
+                                        src={item.src}
+                                        alt={item.label}
+                                        fill
+                                        sizes="120px"
+                                        className="object-cover"
+                                    />
+                                    {active && (
+                                        <span className="absolute inset-x-0 bottom-0 bg-black/70 py-1 text-center text-[10px] uppercase tracking-widest text-amber-100">
+                                            On screen
+                                        </span>
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <p className="mt-3 text-xs leading-relaxed text-neutral-500">
+                        {isLive
+                            ? 'Tap a photo to hold it over the video for everyone watching. The sound keeps playing underneath.'
+                            : 'Once you are live, tap a photo to hold it over the video for everyone watching.'}
+                    </p>
                 </div>
 
                 {/* Caption */}

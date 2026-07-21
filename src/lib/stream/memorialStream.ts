@@ -31,6 +31,26 @@ async function adminHeaders(): Promise<HeadersInit> {
     };
 }
 
+/**
+ * Hold a photo over the live feed, or pass null to go back to the camera.
+ *
+ * The photo is composited on the viewer's page rather than into the video
+ * track, so it stays crisp on every screen and costs no extra bandwidth —
+ * and the camera's audio keeps playing underneath it.
+ */
+export async function setMemorialPhoto(photo: string | null): Promise<void> {
+    const res = await fetch('/api/halala/stream', {
+        method: 'POST',
+        headers: await adminHeaders(),
+        body: JSON.stringify({ action: 'photo', photo }),
+    });
+
+    if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: '' }));
+        throw new Error(error || 'Could not update the photo.');
+    }
+}
+
 // ============= BROADCASTER =============
 
 export class MemorialBroadcaster {

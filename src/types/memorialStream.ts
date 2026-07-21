@@ -31,8 +31,27 @@ export interface MemorialStreamState {
     viewerPeak: number;
     /** Optional line shown under the player, e.g. "Funeral service — Mbabane". */
     title: string;
+    /** Photo held over the live feed, or null to show the camera. */
+    photo: string | null;
     updatedAt: Timestamp | null;
 }
+
+/**
+ * Photos the broadcaster can hold over the live feed — e.g. resting on a
+ * portrait of Halala while a eulogy is read. Audio keeps playing underneath.
+ *
+ * These are the files in /public/halala. Adding a photo there means adding a
+ * line here too: the server only accepts a path from this list, so a stolen
+ * admin token can't point the memorial page at an arbitrary image.
+ */
+export const MEMORIAL_PHOTOS = [
+    { src: '/halala/pic1.jpeg', label: 'Photo 1' },
+    { src: '/halala/pic2.jpeg', label: 'Photo 2' },
+    { src: '/halala/pic3.jpeg', label: 'Photo 3' },
+    { src: '/halala/pic4.jpeg', label: 'Photo 4' },
+] as const;
+
+export const MEMORIAL_PHOTO_SRCS: readonly string[] = MEMORIAL_PHOTOS.map((p) => p.src);
 
 export interface MemorialMessage {
     id?: string;
