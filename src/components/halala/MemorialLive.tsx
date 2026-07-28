@@ -454,6 +454,8 @@ export default function MemorialLive() {
                 <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-neutral-400">
                     {isLive
                         ? 'The service is being streamed live. Wherever you are in the world, you are with us.'
+                        : status === 'ended'
+                            ? "The Memorial Service was July 25, 2026 — here's a replay for those who couldn't join live."
                         : 'The service will be streamed live on this page. Please return at the appointed time to join us.'}
                 </p>
             </div>
@@ -515,21 +517,29 @@ export default function MemorialLive() {
                         </AnimatePresence>
                     </div>
 
-                    {/* Offline / ended placeholder */}
+                    {/* Ended-service replay / offline placeholder */}
                     {!isLive && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
-                            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-amber-200/20 bg-amber-200/5">
-                                <span className="text-2xl">🕯️</span>
+                        status === 'ended' ? (
+                            <iframe
+                                className="absolute inset-0 h-full w-full"
+                                src="https://www.youtube.com/embed/13SD3-DQxgk?si=gLIao0uEsNm0twAV"
+                                title="Memorial service replay"
+                                frameBorder="0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                referrerPolicy="strict-origin-when-cross-origin"
+                                allowFullScreen
+                            />
+                        ) : (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+                                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-amber-200/20 bg-amber-200/5">
+                                    <span className="text-2xl">🕯️</span>
+                                </div>
+                                <p className="font-display text-lg tracking-wide text-amber-100/90">Not yet live</p>
+                                <p className="mt-3 max-w-sm text-sm leading-relaxed text-neutral-400">
+                                    This page will begin playing automatically once the service starts.
+                                </p>
                             </div>
-                            <p className="font-display text-lg tracking-wide text-amber-100/90">
-                                {status === 'ended' ? 'The service has concluded' : 'Not yet live'}
-                            </p>
-                            <p className="mt-3 max-w-sm text-sm leading-relaxed text-neutral-400">
-                                {status === 'ended'
-                                    ? 'Thank you to everyone who joined us from around the world.'
-                                    : 'This page will begin playing automatically once the service starts.'}
-                            </p>
-                        </div>
+                        )
                     )}
 
                     {/* Connecting */}
